@@ -103,12 +103,9 @@ The wiring between the microcontroller, joystick and Z buttons are detailed in t
 
 
 **XYZ motion controller**
-The LabEmbryoCam makes use of a CoreXY (https://en.wikipedia.org/wiki/CoreXY) style of motion control and this can be achieved using a range of different
-microncontroller boards from both CNC and 3D printing suppliers. The Minitronics V2 board is used here because 
-of a low cost and having integrated drivers (reducing setup complexity). More sophisticated boards would enable 
-higher resolution (via microstepping) and quieter operation, but come at a higher cost.
+Remove the microSD card from the Duet microcontroller and copy across the firmware and configuration files from ___. 
 
-Firmware and configuration files for the Minitronics board are accessible in the XYZ_microcontroller folder of the LabEmbryoCam software. The XYZ microcontroller is more sophisticated than the Arduino UNOs used for the lighting and manual input control, and requires some different settings when uploading the scripts using the Arduino IDE. Further information can be found here, in the 'Configuring Arduino' section: https://reprap.org/wiki/Minitronics_20
+Connecting an ethernet cable will enable access to the Duet microcontroller interface via webbrowser on your network. Note however, that the IP address is not always fixed, but often defaults to .... Otherwise, the IP can be found either using a network scanner, or by connecting to the Duet3D board via USB - using the setup steps here... This enables the IP address to be viewed using 'M522 S1..'. 
 
 
 **Raspberry Pi**
