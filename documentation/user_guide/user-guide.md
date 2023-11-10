@@ -10,12 +10,12 @@
 -----------------
 ### INDEX
 -----------------
-* **1.0 Hardware setup**
-* **2.0 Starting the webserver**
-* **3.0 Homing the motorised XYZ stage**
-* **4.0 Setting up camera and starting live stream**
-* **5.0 Using manual controls to find and save desired positions**
-* **6.0 Set acquisition parameters and start acquisition**
+* **1. Hardware setup**
+* **2. Starting the webserver**
+* **3. Homing the motorised XYZ stage**
+* **4. Setting up camera and starting live stream**
+* **5. Using manual controls to find and save desired positions**
+* **6. Set acquisition parameters and start acquisition**
 -----------------
 
 
@@ -27,7 +27,7 @@
 
 
 -----------------
-### 1.0 HARDWARE SETUP
+### 1. HARDWARE SETUP
 -----------------
 The LEC is a versatile multidimensional imaging platform. A broad range of magnifications are possible, using different optical hardware, particularly lenses. 
 
@@ -45,14 +45,14 @@ The LEC was initially developed for dark field imaging of developing aquatic emb
 
 
 -----------------
-### 2.0 STARTING THE WEBSERVER
+### 2. STARTING THE WEBSERVER
 -----------------
 
 Once you have powered on your system, you can start the LabEmbryoCam (LEC) webserver by double clicking the icon on the desktop or in the Activities panel:
 
 IMAGE REQ.
 
-A terminal window will automatically open followed by the FireFox browser with the webserver loaded. We can now proceed with getting the hardware set up for running an experiment.
+A terminal window will automatically open followed by the browser with the webserver loaded. We can now proceed with getting the hardware set up for running an experiment.
 
 
 
@@ -64,9 +64,9 @@ A terminal window will automatically open followed by the FireFox browser with t
 
 
 -----------------
-### 3.0 HOMING THE MOTORISED XYZ STAGE
+### 3. HOMING THE MOTORISED XYZ STAGE
 -----------------
-The first step required in setting up any experiment with the LEC is to home the XYZ stage. This is essential to ensure that the correct origin is used when finding and creating positions. To do this, click the Set Origin button in the user interface - you may have to scroll down the page to find it:
+The first step required in setting up any experiment with the LEC is to home the XYZ stage. This is essential to ensure that the correct origin is used when finding and creating positions. To do this, click the `Set Origin` button in the user interface - you may have to scroll down the page to find it:
 
 ***Before homing the stage, make sure there are no objects that could obstruct the movement of the stage. Also, make sure not to use the app whilst the stage is homing as this could interfere with the process.***
 
@@ -82,9 +82,9 @@ The first step required in setting up any experiment with the LEC is to home the
 
 
 -----------------
-### 4.0 STARTING THE WEBSERVER
+### 4. STARTING THE WEBSERVER
 -----------------
-On startup of the LEC webserver the camera is already initiated, however the default settings typically need to be adjusted to record good quality video. Adjusting the camera settings can simply be achieved using the Camera Settings section of the user interface: 
+On startup of the LEC webserver the camera is already initiated, however the default settings typically need to be adjusted to record good quality video. Adjusting the camera settings can simply be achieved using the `Camera Settings` section of the user interface: 
 
 <img src="assets/camera-setup.png"  width="80%">
 
@@ -94,15 +94,15 @@ The following are descriptions for each camera setting:
 * **Frame-rate**: The frame-rate at which videos are captured. Note that for high resolutions, such as 2048x2048, you will need to reduce exposure time below 10ms if you would like to achieve a frame-rate higher than 15-20fps. This is due to a hard limit set by the camera driver on raspberry pi.
 * **Resolution**: Presets for resolution at which images will be captured.
 
-***For changes to the camera settings to take effect you must press the Update button at the bottom of the Camera Settings section.***
+***For changes to the camera settings to take effect you must press the `Update` button at the bottom of the Camera Settings section.***
 
-On the right you will see section termed Camera View, here you can capture still images using the Snap button and start a live video stream using the Start/Stop Stream button:
+On the right you will see section termed `Camera View`, here you can capture still images using the `Snap` button and start a live video stream using the `Start/Stop Stream` button:
 
 <img src="assets/camera-startup.png"  width="80%">
 
-Still image are interactive, so you can zoom in and out, and move the image to find an improved view. Before starting the next step, you may wish to start the live video stream for easily finding the animals or subjects you wish to record using the LEC.
+Still images are interactive, so you can zoom in and out, and move the image to find an improved view. Before starting the next step, you may wish to start the live video stream for easily finding the animals or subjects you wish to record using the LEC.
 
-***If you would like to change the camera settings you must exit the live stream before doing this so that your changes can take effect. Then when you have finished choosing your desired setttings, press the Update Settings button before starting the live stream again.***
+***If you would like to change the camera settings you must exit the live stream before doing this so that your changes can take effect. Then when you have finished choosing your desired setttings, press the `Update` button before starting the live stream again.***
 
 
 
@@ -111,13 +111,16 @@ Still image are interactive, so you can zoom in and out, and move the image to f
 
 
 -----------------
-### 5.0 USING MANUAL CONTROLS TO FIND AND SAVE POSITIONS
+### 5. USING MANUAL CONTROLS TO FIND AND SAVE POSITIONS
 -----------------
-The manual controls consist of the joystick (for controlling the X and Y movement of the stage) and also a pair of Z-axis buttons (for raising or lowering the Z axis). To enable the joystick and Z buttons, toggle the following switch in the user interface:
+
+The manual controls are entirely virtual and can be used as soon as the stage finishes homing. These can be found in the following section of the user interface:
 
 <img src="assets/manua-controls.png"  width="80%">
 
-In conjunction with the camera live video stream, move the joystick and Z buttons to move the camera to a desired position. Once you have a position that you want, click the Current button in the xyz tab to record the current position:
+The dropdown above the controls determines the distance the stage moves (*mm*) every time you press one of the arrows. 
+
+In conjunction with the camera live video stream, move the stage using the manual controls to move the camera to a desired position. Once you have a position that you want, click the `Current` button in the xyz section to record the current position:
 
 <img src="assets/save-position.png"  width="80%">
 
@@ -147,7 +150,7 @@ The XYZ section provides functionality for creating lists of X, Y and Z position
 
 
 -----------------
-### 6.0 SETTING AND STARTING ACQUISITIONS
+### 6. SETTING AND STARTING ACQUISITIONS
 -----------------
 
 The acquisition parameters can be found at the bottom of the page of the user interface in the Acquisition section:
@@ -161,7 +164,7 @@ Here are descriptions for each acquisition parameter:
 **Acquisition length** - How long to capture video for each position, at each timepoint.
 **Driver and Folder selection** - The full file path to the directory where you would like to save video. This can be selected using the Select button.
 
-Once you have added in the your desired acquisition parameters, you can now start an acquisition using the Start acquisition button!
+Once you have added in your desired acquisition parameters, you can now start an acquisition using the Start acquisition button!
 
 
 
