@@ -1,7 +1,7 @@
 {
 	"reduction_factor": 0.90,
 	"compress_cores": 6,
-	"camera_platform":"opencv",
+	"camera_platform":"picamera2",
 	"exposure": 30,
 	"framerate": 15,
 	"emails": "off",

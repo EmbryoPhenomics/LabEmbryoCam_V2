@@ -9,12 +9,10 @@ def check_port(port, queue):
 
     out = str(port.readline())
     
-    if 'joystick' in out:
-        queue.put('joystick')
+    if 'light' in out:
+        queue.put('light')
     else:
         queue.put('stage')
-    
-    port.close()
 
 def check_devices():
     ports = list_ports.grep('/dev/ttyACM*')
@@ -27,18 +25,15 @@ def check_devices():
         queue = mp.Queue()
         proc = mp.Process(target=check_port, args=(p, queue))
         proc.start()
-               
+        
         time.sleep(2)
-        print(queue.empty())
         if queue.empty():
             xyz_port = p
         else:
             port_type = queue.get()
-            print(port_type)
-            if 'joystick' in port_type:
+            if 'light' in port_type:
                 manual_control_port = p
-        
-        proc.terminate()
+
         queue.close()
 
     print(manual_control_port, xyz_port)

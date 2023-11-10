@@ -79,8 +79,8 @@ def check_port(port, queue):
 
     out = str(port.readline())
     
-    if 'joystick' in out:
-        queue.put('joystick')
+    if 'light' in out:
+        queue.put('light')
     else:
         queue.put('stage')
 
@@ -101,7 +101,7 @@ def check_devices():
             xyz_port = p
         else:
             port_type = queue.get()
-            if 'joystick' in port_type:
+            if 'light' in port_type:
                 manual_control_port = p
 
         queue.close()
@@ -281,18 +281,18 @@ resolution_presets = {
     2048: (2048, 2048)
 }
 
-# manual_control_port, xyz_port = check_devices()
-manual_control_port, xyz_port = '/dev/ttyACM0', '/dev/ttyACM1'
+manual_control_port, xyz_port = check_devices()
+# manual_control_port, xyz_port = '/dev/ttyACM0', '/dev/ttyACM1'
 
 # Initiate serial connections
-manual_control_serial = serial.Serial(manual_control_port, 115200)
-xyz_serial = serial.Serial(xyz_port, 115200)
+# manual_control_serial = serial.Serial(manual_control_port, 115200)
+# xyz_serial = serial.Serial(xyz_port, 115200)
 
 camera_state = CameraState()
 experimental_log = ExperimentJobLog()
-hardware = xyz.StageHardware(xyz_serial, None)
+# hardware = xyz.StageHardware(xyz_serial, None)
 coord_data = xyz.Coordinates()
-leds = leds.HardwareBrightness(manual_control_serial)
+# leds = leds.HardwareBrightness(manual_control_serial)
 camera = Camera(benchmark=True)
 loaded_camera_settings = CameraConfigLoad() 
 acquisition_state = AcquisitionState()
@@ -302,6 +302,7 @@ server = Flask(__name__)
 app = dash.Dash(__name__, server=server, long_callback_manager=long_callback_manager, external_stylesheets=[dbc.themes.BOOTSTRAP, './assets/app.css', dbc.icons.FONT_AWESOME])
 app.config['suppress_callback_exceptions'] = True 
 app.layout = layout.app_layout()
+# app.css.append_css({'external_url': 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css'})
 
 # For callbacks where no return is needed
 trigger = ''
