@@ -116,7 +116,7 @@ Still images are interactive, so you can zoom in and out, and move the image to 
 
 The manual controls are entirely virtual and can be used as soon as the stage finishes homing. These can be found in the following section of the user interface:
 
-<img src="assets/manua-controls.png"  width="80%">
+<img src="assets/manual-controls.png"  width="80%">
 
 The dropdown above the controls determines the distance the stage moves (*mm*) every time you press one of the arrows. 
 
