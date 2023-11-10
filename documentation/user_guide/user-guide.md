@@ -50,7 +50,7 @@ The LEC was initially developed for dark field imaging of developing aquatic emb
 
 Once you have powered on your system, you can start the LabEmbryoCam (LEC) webserver by double clicking the icon on the desktop or in the Activities panel:
 
-IMAGE REQ.
+<img src="assets/starting-webserver.png"  width="80%">
 
 A terminal window will automatically open followed by the browser with the webserver loaded. We can now proceed with getting the hardware set up for running an experiment.
 
