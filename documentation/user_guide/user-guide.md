@@ -131,13 +131,17 @@ You can repeat this step until you have recorded all the positions you want. Onc
 The following are descriptions for each of the controls and components in the XYZ controls and settings section of the user interface:
 
 * **Set Origin**: Press this button to home the stage at startup of the user interface
-* **Manual Controls**: Click this switch to enable or disable the joystick and Z-axis buttons on the system.
+* **Left group of arrows**: These arrows correspond to moving the stage in the X and Y axis, you can move the stage forward (down arrow), backward (up arrow), left and right, but also diagonally.
+* **Right group of arrows**: These arrows move the stage up and down in the Z axis.
+
+On the right, above the XYZ position graph, there are the following controls:
+
 * **Activate graph**: Enabling this switch will allow you to click on positions on the graph and then the stage will move to the select position. This can be an easy way to double-check all your positions are correct whilst you have a live stream open.
 * **Dimension**: Enabling this switch can switch between 2D (as shown above) or 3D view, 3D view can be useful for checking the z axis positions.
 * **Generate XY**: Options and parameters for generating multi-well positions based on the coordinates at position ‘A1’.
 
+The XYZ section provides functionality for creating lists of X, Y and Z positions:
 
-The XYZ section provides functionality for creating lists of X, Y and Z positions.
 * **Current**: Press this button to retrieve the coordinates of the current position where the stage is at. A new entry will be added into the position list below where it can be edited further.
 * **Replace**: Press this button to replace the coordinates of the selected position with those at the current position of the stage. This can be used to update a position if an animal has moved or gone out of focus. Note that you must select a position in the position list via clicking on the circle icon in the second column of the position list for the position you’d like to replace.
 * **Position list table**: Position list where coordinates are recorded. The first column is for removing position entries from the list, simply click the x icon for the position you’d like to remove. The second column is to permit selection of specific position entries for updating their coordinates. Finally, columns X, Y, Z and Label are all editable similar to an excel spreadsheet.
@@ -158,11 +162,11 @@ The acquisition parameters can be found at the bottom of the page of the user in
 <img src="assets/acquisition-parameters.png"  width="80%">
 
 Here are descriptions for each acquisition parameter:
-**Number of positions** - Whether you would like to capture footage for only the current position (‘Single’) or all the positions you have recorded (‘Multiple’).
-**Number of timepoints** - How many acquisition iterations you would like the system to complete. An iteration consists of capturing footage for the specified positions. Setting the acquisition interval allows us to set this process to complete every X minutes, where X would be the acquisition interval
-**Acquisition interval** - How long to wait between each timepoint in minutes.
-**Acquisition length** - How long to capture video for each position, at each timepoint.
-**Driver and Folder selection** - The full file path to the directory where you would like to save video. This can be selected using the Select button.
+* **Number of positions**: Whether you would like to capture footage for only the current position (‘Single’) or all the positions you have recorded (‘Multiple’).
+* **Number of timepoints**: How many acquisition iterations you would like the system to complete. An iteration consists of capturing footage for the specified positions. Setting the acquisition interval allows us to set this process to complete every X minutes, where X would be the acquisition interval
+* **Acquisition interval**: How long to wait between each timepoint in minutes.
+* **Acquisition length**: How long to capture video for each position, at each timepoint.
+* **Driver and Folder selection**: The full file path to the directory where you would like to save video. This can be selected using the Select button.
 
 Once you have added in your desired acquisition parameters, you can now start an acquisition using the Start acquisition button!
 
