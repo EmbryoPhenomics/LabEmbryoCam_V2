@@ -43,7 +43,7 @@ def gen_xy_old(xy1, xWells, yWells):
     for i in range(yWells):
         for j in range(xWells):
             x = round((j*well_dist) + xy1[0], 2)
-            y = round((-i*well_dist) + xy1[1], 2)
+            y = round((i*well_dist) + xy1[1], 2)
             z = xy1[2]
             labels = yLabs[i]+str(j+1)
             positions.append((x,y,z,labels))
@@ -388,10 +388,18 @@ class StageHardware:
             self.joystick.close()
 
 if __name__ == '__main__':
-    stage = StageHardware(Serial('/dev/ttyACM0', 115200), Serial('/dev/ttyACM1', 115200))
-    stage.setOrigin()
+    import matplotlib.pyplot as plt
+    a1 = (66, 19, 0)
+    for p in gen_xy_old(a1, 12, 8):
+        x,y,z,l = p
+        plt.plot(x,y, 'o')
+    plt.show()
+
+
+    # stage = StageHardware(Serial('/dev/ttyACM0', 115200), Serial('/dev/ttyACM1', 115200))
+    # stage.setOrigin()
        
-    stage.moveXY_from_relative_coords(-30, 30, 0)
+    # stage.moveXY_from_relative_coords(-30, 30, 0)
 #     stage.moveXY_from_relative_coords(-15, 15, 0)
 #     stage.moveXY_from_relative_coords(-15, 0, 0)
 #     stage.moveXY_from_relative_coords(25, -20, 0)
