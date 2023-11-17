@@ -193,7 +193,7 @@ def app_layout():
                                                 dict(label='0.1mm', value=0.1),
                                                 dict(label='1mm', value=1),
                                                 dict(label='10mm', value=10)],
-                                            value=0.001),
+                                            value=10),
                                         html.Br(),
                                     ]),
 
