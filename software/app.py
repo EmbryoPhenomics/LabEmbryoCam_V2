@@ -285,14 +285,14 @@ manual_control_port, xyz_port = check_devices()
 # manual_control_port, xyz_port = '/dev/ttyACM0', '/dev/ttyACM1'
 
 # Initiate serial connections
-# manual_control_serial = serial.Serial(manual_control_port, 115200)
-# xyz_serial = serial.Serial(xyz_port, 115200)
+manual_control_serial = serial.Serial(manual_control_port, 115200)
+xyz_serial = serial.Serial(xyz_port, 115200)
 
 camera_state = CameraState()
 experimental_log = ExperimentJobLog()
-# hardware = xyz.StageHardware(xyz_serial, None)
+hardware = xyz.StageHardware(xyz_serial, None)
 coord_data = xyz.Coordinates()
-# leds = leds.HardwareBrightness(manual_control_serial)
+leds = leds.HardwareBrightness(manual_control_serial)
 camera = Camera(benchmark=True)
 loaded_camera_settings = CameraConfigLoad() 
 acquisition_state = AcquisitionState()
@@ -863,8 +863,8 @@ def acquire(set_progress, n_clicks, cam_init, timepoints, length, time, fps, use
         DATA_FOLDER = user_path
         print(DATA_FOLDER)
 
-        if not os.path.isdir(DATA_FOLDER):
-            os.makedirs(DATA_FOLDER)
+        if os.path.isdir(DATA_FOLDER):
+            return trigger, False, True
 
         if acq_num == 'Single': 
             print('Starting acquisition...')          
@@ -1361,7 +1361,7 @@ def replace_xy_in_list(n_clicks, selected_rows, data):
         Input('cancel-acquire-button', 'disabled')]
     )
 def enable_generate_xy(xy, acq_running):
-    if acq_running:
+    if not acq_running:
         return True, True
     else:
         if xy is not None:
@@ -1485,6 +1485,11 @@ def update_graph(data, dim_switch):
         else:
             fig = go.Figure(data=[go.Scatter(x=[], y=[], mode='markers')])
 
+    # Reverse y-axis to correspond with stage origin
+    fig.update_layout(
+        yaxis = dict(autorange="reversed")
+    )
+    
     # Enable clicking
     fig['layout']['clickmode'] = 'event+select'
 
@@ -1530,6 +1535,7 @@ def move_by_graph(switch, selectedData):
             if (px == x) and (py == y) and (pz == z) and (pl == label):
                 return dash.no_update
             else:
+                relative.start(x=x, y=y, z=z)
                 coord_data.set_current(x,y,z,label)
                 hardware.moveXY(x,y,z)
                 
