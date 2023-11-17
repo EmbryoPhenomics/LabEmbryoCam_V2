@@ -69,14 +69,14 @@ class LiveOptFlow:
             
             for (good_old, good_new, rot, diff) in self.point_log:
                 for old, new, r, d in zip(good_old, good_new, rot, diff):
-                    if math.sqrt(d[0]**2 + d[1]**2) < 0.5:
+                    if math.sqrt(d[0]**2 + d[1]**2) < 0.25:
                         continue
                     
                     old, new = map(tuple, (old, new))
 
-                    rot_line_color = (0, 0, 255)
-                    if r > 0:
-                        rot_line_color = (0, 255, 255)
+                    rot_line_color = (0, 255, 0)
+                    # if r > 0:
+                    #     rot_line_color = (0, 255, 255)
 
                     new = tuple(map(int, new))
                     old = tuple(map(int, old))
@@ -152,6 +152,7 @@ class CaptureGenerator:
             else:
                 frame = self.cam_cls.camera.capture_array()
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                frame = np.flip(frame, axis=1)
                 self.cam_cls.benchmarker.record_frame_time()
                 
                 self.cam_cls.benchmarker.record_complete()
@@ -181,7 +182,7 @@ class PiCam2():
 
         self.features = {
             'framerate': 30,
-            'exposure': 20,
+            'exposure': 20000, # in u-ms, *1000 for ms
             'contrast': 0,
             'width': 640, 
             'height': 480
@@ -299,6 +300,8 @@ class PiCam2():
             else:
                 frame = self.camera.capture_array()
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                frame = np.flip(frame, axis=1)
+
                 self.benchmarker.record_frame_time()
 
                 callback(frame)
