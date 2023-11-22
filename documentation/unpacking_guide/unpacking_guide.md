@@ -40,8 +40,15 @@ The power cable should be connected to the kettle style connector.
 When running the LEC, data should be written to an external drive, preferrably an SSD (Solid State Drive). A cable is included  and the LEC will sit in the slot to the side of the electornics enclosure. The USB cable should be connected to the labelled 'SSD' slot on the electronics enclosure fascia. It is preferrable to attach the drive before powering on the instrument, as they will not always be detected if plugged in when the LEC is already powered up.
 
 -----------------
+### 6.0 FITTING FEET
+-----------------
+While the LEC can be used with the vibration insulating feet, experiments will inevitably be impacted by vibrations from the environment without them. Fitting them simply requires four screws to be attached. It is important to note that the feet are fragile. The 3D printed plastic leafspring parts will snap if excessive weight is placed on the instrument. For this reason, spare feet are provided and the sorbothene (rubber) part can be screwed onto a new 3D printed leafspring if required.
+
+To fit the feet, lie the instrument on its side and use the included allen key to attach the screw the foot to the instrument using the included screws.
+
+-----------------
 ### 6.0 TURNING ON
 -----------------
 To turn the LEC on, use the ON/OFF toggle switch on the port end of the LEC. Follow the instructions in the USER MANUAL for operation of the LEC. However, given that this is the first operation post-shipping, a few things should be checked for.
 
-i) Ensure t
+i) Ensure that the cables at the bottom and rear of instrument have sufficient slack when attaching them to the cable holders with cable ties.
