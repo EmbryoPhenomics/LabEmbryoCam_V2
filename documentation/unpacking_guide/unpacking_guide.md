@@ -5,7 +5,7 @@
 -----------------
 ### 1.0 UNPACKING
 -----------------
-The LEC can be removed from its packaging using the frame. Avoid using the 'internals' to pull it out, and be mindful of snagged wires.
+The LEC can be removed from its packaging using the frame. Avoid using the 'internals' to pull it out, instead using the outer pieces of frame, and be mindful of snagged wires.
 
 -----------------
 ### 2.0 ELECTRONICS MOUNTING
@@ -45,6 +45,8 @@ When running the LEC, data should be written to an external drive, preferrably a
 While the LEC can be used with the vibration insulating feet, experiments will inevitably be impacted by vibrations from the environment without them. Fitting them simply requires four screws to be attached. It is important to note that the feet are fragile. The 3D printed plastic leafspring parts will snap if excessive weight is placed on the instrument. For this reason, spare feet are provided and the sorbothene (rubber) part can be screwed onto a new 3D printed leafspring if required.
 
 To fit the feet, lie the instrument on its side and use the included allen key to attach the screw the foot to the instrument using the included screws.
+
+<img src="assets/feet-attachment-upper.jpeg"  width="40%"> <img src="assets/feet-attachment-lower.jpeg"  width="40%">
 
 -----------------
 ### 6.0 TURNING ON
