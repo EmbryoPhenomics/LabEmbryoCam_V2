@@ -46,7 +46,10 @@ While the LEC can be used with the vibration insulating feet, experiments will i
 
 To fit the feet, lie the instrument on its side and use the included allen key to attach the screw the foot to the instrument using the included screws.
 
-<img src="assets/feet-attachment-upper.jpeg"  width="40%"> <img src="assets/feet-attachment-lower.jpeg"  width="40%">
+
+<img src="assets/feet-attachment-upper.jpeg"  width="40%"> 
+
+<img src="assets/feet-attachment-lower.jpeg"  width="40%">
 
 -----------------
 ### 6.0 TURNING ON
