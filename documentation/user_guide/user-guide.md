@@ -96,6 +96,11 @@ The following are descriptions for each camera setting:
 
 ***For changes to the camera settings to take effect you must press the `Update` button at the bottom of the Camera Settings section.***
 
+
+**Note**
+There are two physical adjustable parameters on the lense itself, the iris and the magnification. The upper adjustment ring is associated with magnification changes and the lower adjustment ring is associated with the iris. If you change the magnification, the require distance between the sample in the multiwell plate and the lense will need to be changed as well. Finally, if you change the iris, the image will darken or brighten but the depth of field will also change.
+
+
 On the right you will see section termed `Camera View`, here you can capture still images using the `Snap` button and start a live video stream using the `Start/Stop Stream` button:
 
 <img src="assets/camera-startup.png"  width="80%">
