@@ -30,7 +30,7 @@ def which(iterable, obj):
     return are
 
 # Identify relevant well to well distances for 24, 48, 96 and 384 well plates and corresponding x_wells
-well_dists = {6:18, 8:13, 12:9, 24:4.5}
+well_dists = {6:24.28, 8:17.14, 12:11.275, 24:5.625}
 yLabs = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P'] 
 def gen_xy_old(xy1, xWells, yWells):
     '''
@@ -161,12 +161,12 @@ class StageHardware:
                 pass
             
             if status != 'I':
-                time.sleep(0.5)
+                time.sleep(1)
                 continue
             else:
                 break
             
-        time.sleep(3)
+        time.sleep(5)
             
     def check_status(self):
         self.xyz.write(str.encode('M408 S0'+ '\n'))

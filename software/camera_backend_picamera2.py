@@ -151,7 +151,7 @@ class CaptureGenerator:
                 break
             else:
                 frame = self.cam_cls.camera.capture_array()
-                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                 frame = np.flip(frame, axis=1)
                 self.cam_cls.benchmarker.record_frame_time()
                 
@@ -257,7 +257,7 @@ class PiCam2():
         
         frame = self.camera.capture_array()
         print(frame.shape)
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         self.camera.stop()
         self.close()
 
@@ -299,7 +299,7 @@ class PiCam2():
                 break
             else:
                 frame = self.camera.capture_array()
-                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                 frame = np.flip(frame, axis=1)
 
                 self.benchmarker.record_frame_time()
@@ -387,7 +387,7 @@ class PiCam2():
                 frame = frame_queue.popleft()
 
                 if frame is not None:
-                    frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR) # grayscale results in corrupted images on pi for some reason
+                    frame = cv2.cvtColor(frame, cv2.COLOR_RGBA2BGR) # grayscale results in corrupted images on pi for some reason
                     self.writer.write(frame)
                     self.pgbar.update(1)
                 else:

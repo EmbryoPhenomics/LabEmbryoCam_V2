@@ -256,15 +256,29 @@ class RelativeXYZ:
         self.y = None
         self.z = None
 
+        # Limits
+        self.x1, self.x2 = (22, 210)
+        self.y1, self.y2 = (0, 80)
+        self.z1, self.z2 = (0, 10)
+
     def start(self, x, y, z):
         self.x = x
         self.y = y
         self.z = z
 
     def update(self, x=0, y=0, z=0):
-        self.x += x
-        self.y += y
-        self.z += z
+        u_x = self.x + x
+        if u_x >= self.x1 and u_x <= self.x2:
+            self.x += x
+            
+        u_y = self.y + y
+        if u_y >= self.y1 and u_y <= self.y2:
+            self.y += y
+            
+        u_z = self.z + z
+        if u_z >= self.z1 and u_z <= self.z2:
+            self.z += z
+            
         print(self.x,self.y,self.z)
 
 relative = RelativeXYZ()
@@ -701,10 +715,9 @@ def convert_to_avi(files, fps, checklist, codec='MJPG', delete_npy=True):
     # For converting numpy files to avi's for ease of use
     for file in files:
         array = np.load(file)
-        h, w = array.shape[1:]
+        h, w, c = array.shape[1:]
         writer = cv2.VideoWriter(re.sub('.npy', '.avi', file), cv2.VideoWriter_fourcc(*codec), fps, (w,h))
         for frame in array:
-            frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2RGB)
             writer.write(frame)
 
         writer.release()
@@ -823,7 +836,8 @@ units_per_sec = 6
         State('fps', 'value'),
         State('acquire-path-input', 'value'),
         State('xy_coords', 'data'),
-        State('acquisition-number', 'value')
+        State('acquisition-number', 'value'),
+        State('resolution-preset', 'value'),
     ],
     manager=long_callback_manager,
     running=[
@@ -846,7 +860,7 @@ units_per_sec = 6
         Output("embryo-pg", "value"), Output("embryo-pg", "label"), Output("embryo-pg", "max"), 
     ],
 )
-def acquire(set_progress, n_clicks, cam_init, timepoints, length, time, fps, user_path, xy_data, acq_num):
+def acquire(set_progress, n_clicks, cam_init, timepoints, length, time, fps, user_path, xy_data, acq_num, resolution):
     if n_clicks is None:
         return dash.no_update, False, False
     else:
@@ -863,7 +877,12 @@ def acquire(set_progress, n_clicks, cam_init, timepoints, length, time, fps, use
         DATA_FOLDER = user_path
         print(DATA_FOLDER)
 
-        if os.path.isdir(DATA_FOLDER):
+        # Set user-specified acquisition resolution
+        width, height = resolution_presets[resolution]
+        camera.set('width', width)
+        camera.set('height', height)
+
+        if len(os.listdir(DATA_FOLDER)):
             return trigger, False, True
 
         if acq_num == 'Single': 
@@ -1089,9 +1108,9 @@ class Nclick:
 ldu_xy_clicks = Nclick()
 @app.callback(
     output=Output('left-diag-xy-up-div', 'children'),
-    inputs=[
-        Input('left-diag-xy-up', 'n_clicks'),
-        Input('xyz-magnitude', 'value')])
+    inputs=[Input('left-diag-xy-up', 'n_clicks')],
+    state=[State('xyz-magnitude', 'value')]
+)
 def left_diag_up_xy(n_clicks, mag):
     if n_clicks:
         if n_clicks > ldu_xy_clicks.n_clicks:
@@ -1107,9 +1126,8 @@ def left_diag_up_xy(n_clicks, mag):
 up_xy_clicks = Nclick()
 @app.callback(
     output=Output('up-xy-div', 'children'),
-    inputs=[
-        Input('up-xy', 'n_clicks'),
-        Input('xyz-magnitude', 'value')])
+    inputs=[Input('up-xy', 'n_clicks')],
+    state=[State('xyz-magnitude', 'value')])
 def up_xy(n_clicks, mag):
     if n_clicks:
         if n_clicks > up_xy_clicks.n_clicks:
@@ -1125,9 +1143,8 @@ def up_xy(n_clicks, mag):
 rdu_xy_clicks = Nclick()
 @app.callback(
     output=Output('right-diag-xy-up-div', 'children'),
-    inputs=[
-        Input('right-diag-xy-up', 'n_clicks'),
-        Input('xyz-magnitude', 'value')])
+    inputs=[Input('right-diag-xy-up', 'n_clicks')],
+    state=[State('xyz-magnitude', 'value')])
 def right_diag_up_xy(n_clicks, mag):
     if n_clicks:
         if n_clicks > rdu_xy_clicks.n_clicks:
@@ -1143,9 +1160,8 @@ def right_diag_up_xy(n_clicks, mag):
 left_xy_clicks = Nclick()
 @app.callback(
     output=Output('left-xy-div', 'children'),
-    inputs=[
-        Input('left-xy', 'n_clicks'),
-        Input('xyz-magnitude', 'value')])
+    inputs=[Input('left-xy', 'n_clicks')],
+    state=[State('xyz-magnitude', 'value')])
 def left_xy(n_clicks, mag):
     if n_clicks:
         if n_clicks > left_xy_clicks.n_clicks:
@@ -1161,9 +1177,8 @@ def left_xy(n_clicks, mag):
 right_xy_clicks = Nclick()
 @app.callback(
     output=Output('right-xy-div', 'children'),
-    inputs=[
-        Input('right-xy', 'n_clicks'),
-        Input('xyz-magnitude', 'value')])
+    inputs=[Input('right-xy', 'n_clicks')],
+    state=[State('xyz-magnitude', 'value')])
 def right_xy(n_clicks, mag):
     if n_clicks:
         if n_clicks > right_xy_clicks.n_clicks:
@@ -1179,9 +1194,8 @@ def right_xy(n_clicks, mag):
 ldd_xy_clicks = Nclick()
 @app.callback(
     output=Output('left-diag-xy-down-div', 'children'),
-    inputs=[
-        Input('left-diag-xy-down', 'n_clicks'),
-        Input('xyz-magnitude', 'value')])
+    inputs=[Input('left-diag-xy-down', 'n_clicks')],
+    state=[State('xyz-magnitude', 'value')])
 def left_diag_down_xy(n_clicks, mag):
     if n_clicks:
         if n_clicks > ldd_xy_clicks.n_clicks:
@@ -1197,9 +1211,8 @@ def left_diag_down_xy(n_clicks, mag):
 down_xy_clicks = Nclick()
 @app.callback(
     output=Output('down-xy-div', 'children'),
-    inputs=[
-        Input('down-xy', 'n_clicks'),
-        Input('xyz-magnitude', 'value')])
+    inputs=[Input('down-xy', 'n_clicks')],
+    state=[State('xyz-magnitude', 'value')])
 def down_xy(n_clicks, mag):
     if n_clicks:
         if n_clicks > down_xy_clicks.n_clicks:
@@ -1215,9 +1228,8 @@ def down_xy(n_clicks, mag):
 rdd_xy_clicks = Nclick()
 @app.callback(
     output=Output('right-diag-xy-down-div', 'children'),
-    inputs=[
-        Input('right-diag-xy-down', 'n_clicks'),
-        Input('xyz-magnitude', 'value')])
+    inputs=[Input('right-diag-xy-down', 'n_clicks')],
+    state=[State('xyz-magnitude', 'value')])
 def right_diag_down_xy(n_clicks, mag):
     if n_clicks:
         if n_clicks > rdd_xy_clicks.n_clicks:
@@ -1234,9 +1246,8 @@ def right_diag_down_xy(n_clicks, mag):
 up_z_clicks = Nclick()
 @app.callback(
     output=Output('up-z-div', 'children'),
-    inputs=[
-        Input('up-z', 'n_clicks'),
-        Input('xyz-magnitude', 'value')])
+    inputs=[Input('up-z', 'n_clicks')],
+    state=[State('xyz-magnitude', 'value')])
 def up_z(n_clicks, mag):
     if n_clicks:
         if n_clicks > up_z_clicks.n_clicks:
@@ -1252,9 +1263,8 @@ def up_z(n_clicks, mag):
 down_z_clicks = Nclick()
 @app.callback(
     output=Output('down-z-div', 'children'),
-    inputs=[
-        Input('down-z', 'n_clicks'),
-        Input('xyz-magnitude', 'value')])
+    inputs=[Input('down-z', 'n_clicks')],
+    state=[State('xyz-magnitude', 'value')])
 def down_z(n_clicks, mag):
     if n_clicks:
         if n_clicks > down_z_clicks.n_clicks:
@@ -1312,8 +1322,8 @@ class ReplaceNClicks:
     output=Output('replace-xy-callback', 'children'),
     inputs=[Input('replace-xy-button', 'n_clicks')],
     state=[
-        Input('xy_coords', 'selected_rows'),
-        Input('xy_coords', 'data')
+        State('xy_coords', 'selected_rows'),
+        State('xy_coords', 'data')
     ])
 def replace_xy_in_list(n_clicks, selected_rows, data):
     if n_clicks:
@@ -1354,8 +1364,8 @@ def replace_xy_in_list(n_clicks, selected_rows, data):
 
 @app.callback(
     output=[
-     Output('generate-xy-button', 'disabled'),
-     Output('plate-size', 'disabled')],
+        Output('generate-xy-button', 'disabled'),
+        Output('plate-size', 'disabled')],
     inputs=[
         Input('xy_coords', 'data'),
         Input('cancel-acquire-button', 'disabled')]
