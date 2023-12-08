@@ -151,7 +151,6 @@ class CaptureGenerator:
                 break
             else:
                 frame = self.cam_cls.camera.capture_array()
-                # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                 frame = np.flip(frame, axis=1)
                 self.cam_cls.benchmarker.record_frame_time()
                 
@@ -257,7 +256,6 @@ class PiCam2():
         
         frame = self.camera.capture_array()
         print(frame.shape)
-        # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         self.camera.stop()
         self.close()
 
@@ -299,7 +297,7 @@ class PiCam2():
                 break
             else:
                 frame = self.camera.capture_array()
-                # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                frame = cv2.cvtColor(frame, cv2.COLOR_RGBA2RGB)
                 frame = np.flip(frame, axis=1)
 
                 self.benchmarker.record_frame_time()
@@ -387,7 +385,6 @@ class PiCam2():
                 frame = frame_queue.popleft()
 
                 if frame is not None:
-                    frame = cv2.cvtColor(frame, cv2.COLOR_RGBA2BGR) # grayscale results in corrupted images on pi for some reason
                     self.writer.write(frame)
                     self.pgbar.update(1)
                 else:
@@ -420,9 +417,9 @@ class PiCam2():
         if not in_memory:
             self.writer.release()
         else:
-            array = np.empty((len(self.frame_queue[:-1]), self.get('height'), self.get('width')), dtype=np.uint8)
+            array = np.empty((len(self.frame_queue[:-1]), self.get('height'), self.get('width'), 3), dtype=np.uint8)
             for i,frame in enumerate(self.frame_queue[:-1]):
-                array[i,:,:] = frame[:]
+                array[i,:,:,:] = frame[:]
             
             np.save(path, array)
 
@@ -440,7 +437,6 @@ if __name__ == '__main__':
     
     timelib.sleep(1)
        
-    cam.acquire('./test.avi', time=10, in_memory=True)
+    cam.acquire('./test.avi', time=10, in_memory=False)
     
     cam.close()
-    

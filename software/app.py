@@ -490,6 +490,10 @@ def update_still_image(n_clicks, cam_init):
             time.sleep(0.5)
 
         frame = camera.grab()
+
+        existing_images = glob.glob('./snap_images/snap-*.png')
+        cv2.imwrite(f'./snap_images/snap-{len(existing_images)+1}.png', frame)
+
         TabState.state = 'still-tab'
         return trigger, renderers.interactiveImage('snap-image', frame), trigger
 
@@ -933,7 +937,7 @@ def acquire(set_progress, n_clicks, cam_init, timepoints, length, time, fps, use
                     experimental_log.update('A', t, str(datetime.datetime.fromtimestamp(t2)))
 
                     converted_checklist = mp.Queue()
-                    convert_proc = mp.Process(target=convert_to_avi, args=([path], fps, convert_checklist))
+                    convert_proc = mp.Process(target=convert_to_avi, args=([path], fps, converted_checklist))
                     convert_proc.start()
 
                     path = re.sub('.npy', '.avi', path) # for emails
@@ -1581,6 +1585,10 @@ if __name__ == '__main__':
     with open('./app_config.json', 'r') as conf:
         app_conf = json.load(conf)
         local_stream = app_conf['local_camera_stream']
+
+    if not os.path.exists('./snap_images'):
+        os.mkdir('./snap_images')
+
     try:
         if local_stream == 'True':
             from threading import Timer
