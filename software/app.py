@@ -343,20 +343,17 @@ camera.startup(cam_type)
 @app.callback(
     output=[
         Output('exposure', 'value'),
-        Output('contrast', 'value'),
     ],
     inputs=[
         Input('connect-cam-callback', 'children'),
         Input('loaded-data-callback', 'children')
     ])
-def update_brightness_ui(cam_init, loaded_data):
+def update_exposure_ui(cam_init, loaded_data):
     if trigger not in [loaded_data]:
         exposure = camera.get('exposure') / 1000 # For ms on pi
-        contrast = camera.get('contrast')
     else:
         exposure = loaded_camera_settings.exposure / 1000 # For ms on pi
-        contrast = loaded_camera_settings.contrast
-    return exposure, contrast
+    return exposure
 
 @app.callback(
     output=[
@@ -372,7 +369,7 @@ def update_resolution_ui(cam_init, loaded_data):
         width = camera.get('width')
         height = camera.get('height')
 
-        return dict(label=f'{width}x{height}', value=width), False
+        return width, False
     else:
         width, height = loaded_camera_settings.width, loaded_camera_settings.height
         return width, False
@@ -407,18 +404,16 @@ def update_hardware_brightness(value):
     state=[
         State('connect-cam-callback', 'children'),
         State('exposure', 'value'),
-        State('contrast', 'value'),
         State('resolution-preset', 'value'),
         State('fps', 'value')
     ])
-def update_camera_settings(n_clicks, cam_init, exposure, contrast, resolution, fps):
+def update_camera_settings(n_clicks, cam_init, exposure, resolution, fps):
     if n_clicks:
         if camera.platform:
             print(resolution)
             width, height = resolution_presets[resolution]
 
             camera.set('exposure', exposure * 1000) # Convert back to exposure units on pi
-            camera.set('contrast', contrast)
             camera.set('width', width)
             camera.set('height', height)
             camera.set('framerate', fps)
@@ -439,6 +434,7 @@ class TabState:
     output=[
         Output('camera-state-live-view', 'children'),
         Output('image-capture-tab-state-stream', 'children'),
+        Output('streaming-spinner', 'children')
     ],
     inputs=[Input('camera-live-stream', 'n_clicks')],
     state=[
@@ -453,20 +449,20 @@ def start_stop_live_view(n_clicks, cam_init, mode):
 
         if (camera_state.trigger and camera_state.state == 'streaming'):
             camera_state.on_off('streaming')
-            return trigger, trigger
+            return trigger, trigger, None
         elif camera.platform.is_streaming:
             camera.platform.key = 27 # stop stream by simulating key press
-            return trigger, trigger
+            return trigger, trigger, None
         else:
             # Desktop ----
             if mode:
                 camera.stream()
-                return trigger, trigger
+                return trigger, trigger, dbc.Spinner(color='danger', size='md')
             # Browser -----
             else:
                 TabState.state = 'stream-tab'
                 camera_state.on_off('streaming')
-                return trigger, trigger
+                return trigger, trigger, dbc.Spinner(color='danger', size='md')
     else:
         return dash.no_update, dash.no_update
 
@@ -480,7 +476,9 @@ def start_stop_live_view(n_clicks, cam_init, mode):
     state=[State('connect-cam-callback', 'children')])
 def update_still_image(n_clicks, cam_init):
     if n_clicks is None:
-        return dash.no_update, dash.no_update, dash.no_update
+        frame = cv2.imread('./assets/img/blankImg.png')
+        frame = cv2.resize(frame, (640, 480))
+        return dash.no_update, renderers.interactiveImage('snap-image', frame), dash.no_update
     else:
         if camera_state.trigger and camera_state.state == 'streaming':
             camera_state.on_off('streaming')
@@ -603,16 +601,15 @@ def upload_config(filename):
         with open(filename, 'r') as fp:
             data = json.load(fp)
 
-            loaded_camera_settings.exposure = data['exposure']
-            loaded_camera_settings.framerate = data['framerate']
-            loaded_camera_settings.contrast = data['contrast']
-            loaded_camera_settings.width = data['width']
-            loaded_camera_settings.height = data['height']
+            loaded_camera_settings.exposure = data['camera_settings']['exposure']
+            loaded_camera_settings.framerate = data['camera_settings']['framerate']
+            loaded_camera_settings.width = data['camera_settings']['width']
+            loaded_camera_settings.height = data['camera_settings']['height']
 
-            coord_data.xs = data['x_coordinates']
-            coord_data.ys = data['y_coordinates']
-            coord_data.zs = data['z_coordinates']
-            coord_data.labels = data['labels']
+            coord_data.xs = data['positions']['x_coordinates']
+            coord_data.ys = data['positions']['y_coordinates']
+            coord_data.zs = data['positions']['z_coordinates']
+            coord_data.labels = data['positions']['labels']
 
         return trigger
 
@@ -622,26 +619,38 @@ def upload_config(filename):
     state=[
         State('config-name-input', 'value'),
         State('exposure', 'value'),
-        State('contrast', 'value'),
         State('fps', 'value'),     
-        State('resolution-preset', 'value')
+        State('resolution-preset', 'value'),
+        State('total-time-points', 'value'),
+        State('acq-length', 'value'),
+        State('each-time-limit', 'value'),
+        State('acquire-path-input', 'value'),
     ])
-def save_config(n_clicks, config_name, exposure, contrast, fps, resolution):
+def save_config(n_clicks, config_name, exposure, fps, resolution, timepoints, interval, length, path):
     if n_clicks is None:
         return dash.no_update
     else:
         width, height = resolution_presets[resolution]
 
         featureDict = {
-            'exposure': exposure * 1000, # Convert back to exposure units on pi
-            'contrast': contrast,
-            'framerate': fps,
-            'width': width,
-            'height': height,
-            'x_coordinates': coord_data.xs,
-            'y_coordinates': coord_data.ys,
-            'z_coordinates': coord_data.zs,
-            'labels': coord_data.labels
+            'camera_settings': {
+                'exposure': exposure * 1000, # Convert back to exposure units on pi
+                'framerate': fps,
+                'width': width,
+                'height': height
+            },
+            'positions': {
+                'x_coordinates': coord_data.xs,
+                'y_coordinates': coord_data.ys,
+                'z_coordinates': coord_data.zs,
+                'labels': coord_data.labels
+            },
+            'experiment_settings': {
+                'timepoints': timepoints,
+                'interval': interval,
+                'capture_length': length,
+                'output_path': path
+            }
         }
 
         filename = f'./configs/{config_name}.json'
@@ -837,11 +846,12 @@ units_per_sec = 6
         State('total-time-points', 'value'),
         State('acq-length', 'value'),
         State('each-time-limit', 'value'),
-        State('fps', 'value'),
+        State('exposure', 'value'),
+        State('fps', 'value'),     
+        State('resolution-preset', 'value'),
         State('acquire-path-input', 'value'),
         State('xy_coords', 'data'),
         State('acquisition-number', 'value'),
-        State('resolution-preset', 'value'),
     ],
     manager=long_callback_manager,
     running=[
@@ -864,7 +874,7 @@ units_per_sec = 6
         Output("embryo-pg", "value"), Output("embryo-pg", "label"), Output("embryo-pg", "max"), 
     ],
 )
-def acquire(set_progress, n_clicks, cam_init, timepoints, length, time, fps, user_path, xy_data, acq_num, resolution):
+def acquire(set_progress, n_clicks, cam_init, timepoints, length, time, exposure, fps, resolution, user_path, xy_data, acq_num):
     if n_clicks is None:
         return dash.no_update, False, False
     else:
@@ -888,6 +898,33 @@ def acquire(set_progress, n_clicks, cam_init, timepoints, length, time, fps, use
 
         if len(os.listdir(DATA_FOLDER)):
             return trigger, False, True
+
+        width, height = resolution_presets[resolution]
+
+        featureDict = {
+            'camera_settings': {
+                'exposure': exposure * 1000, # Convert back to exposure units on pi
+                'framerate': fps,
+                'width': width,
+                'height': height
+            },
+            'positions': {
+                'x_coordinates': coord_data.xs,
+                'y_coordinates': coord_data.ys,
+                'z_coordinates': coord_data.zs,
+                'labels': coord_data.labels
+            },
+            'experiment_settings': {
+                'timepoints': timepoints,
+                'interval': length,
+                'capture_length': time,
+                'output_path': user_path
+            }
+        }
+
+        filename = os.path.join(user_path, 'metadata.json')
+        with open(filename, 'w') as fp:
+            json.dump(featureDict, fp, indent=4)
 
         if acq_num == 'Single': 
             print('Starting acquisition...')          
@@ -1592,10 +1629,10 @@ if __name__ == '__main__':
     try:
         if local_stream == 'True':
             from threading import Timer
-            import webbrowser
+            import os
 
             def open_browser():
-                webbrowser.open_new('http://127.0.0.1:8050/')
+                os.system('chromium-browser --kiosk http://127.0.0.1:8050/')
 
             Timer(2, open_browser).start()
             app.run_server(debug=False)
