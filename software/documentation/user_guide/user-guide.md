@@ -61,6 +61,10 @@ A terminal window will automatically open followed by the browser with the webse
 
 
 
+-----------------
+### 3. USER INTERFACE
+-----------------
+<img src="assets/expt-setup.png"  width="80%">
 
 
 -----------------
@@ -70,7 +74,7 @@ The first step required in setting up any experiment with the LEC is to home the
 
 ***Before homing the stage, make sure there are no objects that could obstruct the movement of the stage. Also, make sure not to use the app whilst the stage is homing as this could interfere with the process.***
 
-<img src="assets/set-origin.png"  width="80%">
+<img src="assets/xyz-ctrl.png"  width="80%">
 
 
 
@@ -86,7 +90,7 @@ The first step required in setting up any experiment with the LEC is to home the
 -----------------
 On startup of the LEC webserver the camera is already initiated, however the default settings typically need to be adjusted to record good quality video. Adjusting the camera settings can simply be achieved using the `Camera Settings` section of the user interface: 
 
-<img src="assets/camera-setup.png"  width="80%">
+<img src="assets/cam-setup.png"  width="80%">
 
 The following are descriptions for each camera setting:
 * **Exposure**: The shutter speed at which the camera operates in milliseconds.
@@ -164,7 +168,7 @@ The XYZ section provides functionality for creating lists of X, Y and Z position
 
 The acquisition parameters can be found at the bottom of the page of the user interface in the Acquisition section:
 
-<img src="assets/acquisition-parameters.png"  width="80%">
+<img src="assets/expt-setup.png"  width="80%">
 
 Here are descriptions for each acquisition parameter:
 * **Number of positions**: Whether you would like to capture footage for only the current position (‘Single’) or all the positions you have recorded (‘Multiple’).
