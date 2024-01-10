@@ -5,7 +5,9 @@
 #### ***An opensource platform for automated measurement of developing animals. The LabEmbryoCam is a project originating with the EmbryoPhenomics research group at the University of Plymouth, UK. It has been made possible by support from UKRI, NERC, BBSRC and Plymouth Science Park.***
 
 
+**This is a live document. To see the most recent version, scan the QR code below.**
 
+<img src="assets/manual-qr.png"  width="30%">
 
 -----------------
 ### INDEX
@@ -100,6 +102,8 @@ Begin by choosing a resolution - 1280 x 720 is a good compromise between speed (
 A live stream can be initialised using 'Start/Stop Stream' - and a rotating cursor next to the button will indicate that the camera is running.
 
 Use the live display to ascertain what changes, if any, may be required.
+
+Note that the image you see, is smaller i.e. downsampled to fit on the display and to aid usability. You can Stop the stream and change to 'Desktop' if desired and when the stream is re-enabled a pop-up window will show you what the camera feed looks like at full resolution. 1024 x 768 is the maximum that will fit on the display - but larger resolutions can still be used/viewed, with the window stretching off the visible area of the display.
 
 You can then use the three tabs - LED, Exposure and Frame-rate, to make adjustments as required. However, changes to the camera's - exposure, frame rate, and resolution, should only be made when the 'Start/Stop Stream is deactivated. **Changes are only implemented when clicking 'Update'.**
 
