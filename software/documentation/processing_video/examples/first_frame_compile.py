@@ -48,7 +48,7 @@ def compile_timepoints(folder):
 	for video in videos:
 		video = vuba.Video(video)
 
-		frame = video.read(start=0, grayscale=False):
+		frame = video.read(start=0, grayscale=False)
 		writer.write(frame)
 
 		video.close()
