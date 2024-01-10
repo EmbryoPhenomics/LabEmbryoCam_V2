@@ -45,14 +45,14 @@ The LEC was initially developed for dark field imaging of developing aquatic emb
 
 
 -----------------
-### 2. STARTING THE WEBSERVER
+### 2. STARTING THE USER INTERFACE
 -----------------
 
-Once you have powered on your system, you can start the LabEmbryoCam (LEC) webserver by double clicking the icon on the desktop or in the Activities panel:
+Once you have powered on your system, you can start the LabEmbryoCam (LEC) user interface by double clicking the icon on the desktop or in the Activities panel:
 
 <img src="assets/starting-webserver.png"  width="80%">
 
-A terminal window will automatically open followed by the browser with the webserver loaded. We can now proceed with getting the hardware set up for running an experiment.
+A terminal window will automatically open followed by the browser with the webserver (user interface) loaded. We can now proceed with getting the hardware set up for running an experiment. When the LEC user interface first loads, it connects to the various hardware components automatically - give it a few seconds before interacting with it to allow this process to complete.
 
 
 
@@ -64,9 +64,9 @@ A terminal window will automatically open followed by the browser with the webse
 
 
 -----------------
-### 3. HOMING THE MOTORISED XYZ STAGE
+### 3. XYZ controls and settings
 -----------------
-The first step required in setting up any experiment with the LEC is to home the XYZ stage. This is essential to ensure that the correct origin is used when finding and creating positions. To do this, click the `Set Origin` button in the user interface - you may have to scroll down the page to find it:
+The first step required in setting up any experiment with the LEC is to home, or 'Set Origin' the XYZ stage. This is essential to ensure that the correct origin is used when finding and creating positions. To do this, click the `Set Origin` button in the user interface.
 
 ***Before homing the stage, make sure there are no objects that could obstruct the movement of the stage. Also, make sure not to use the app whilst the stage is homing as this could interfere with the process.***
 
@@ -82,30 +82,38 @@ The first step required in setting up any experiment with the LEC is to home the
 
 
 -----------------
-### 4. STARTING THE WEBSERVER
+### 4. CAMERA VIEW
 -----------------
-On startup of the LEC webserver the camera is already initiated, however the default settings typically need to be adjusted to record good quality video. Adjusting the camera settings can simply be achieved using the `Camera Settings` section of the user interface: 
+Camera and lighting settings will need adjusting to suit your experimental system - species, study aim etc.  
+
+Adjusting the camera and lighting settings can simply be achieved using the `Camera View` section of the user interface: 
 
 <img src="assets/camera-setup.png"  width="80%">
 
-The following are descriptions for each camera setting:
-* **Exposure**: The shutter speed at which the camera operates in milliseconds.
-* **Contrast**: Contrast of the images acquired
-* **Frame-rate**: The frame-rate at which videos are captured. Note that for high resolutions, such as 2048x2048, you will need to reduce exposure time below 10ms if you would like to achieve a frame-rate higher than 15-20fps. This is due to a hard limit set by the camera driver on raspberry pi.
+Begin by choosing a resolution - 720 x 1080 is a good compromise between speed (i.e. maximum frame rate) and resolution, and clicking 'Update'.
+
+A live stream can be initialised using 'Start/Stop Stream' - and a rotating cursor next to the button will indicate that the camera is running.
+
+Use the live display to ascertain what changes, if any, may be required.
+
+You can then use the three buttons - LED, Exposure and Frame-rate, to make adjustments as required. However, changes to the camera's - exposure, frame rate, and resolution, should only be made when the 'Start/Stop Stream is deactivated. Changes are only implemented when clicking 'Update'.
+
+The following are descriptions for each of the settings in the Camera View.
+* **LED**: The percentage brightness of the LED ring light. Note that the lighting can also be adjusted by using the lighting mount up and down, and by screwing/unscrewing the darkfield adapter. The LED will by default go to sleep when not needed during an experiment.
+* * **Exposure**: The shutter speed at which the camera operates in milliseconds - 20 ms is a good starting point.
+* **Frame-rate**: The frame-rate at which videos are captured. Note that for high resolutions, such as 2048x2048, you will need to reduce exposure time below 10ms if you would like to achieve a frame-rate higher than 15-20fps. 
 * **Resolution**: Presets for resolution at which images will be captured.
 
 ***For changes to the camera settings to take effect you must press the `Update` button at the bottom of the Camera Settings section.***
 
-
 **Note**
-There are two physical adjustable parameters on the lense itself, the iris and the magnification. The upper adjustment ring is associated with magnification changes and the lower adjustment ring is associated with the iris. If you change the magnification, the require distance between the sample in the multiwell plate and the lense will need to be changed as well. Finally, if you change the iris, the image will darken or brighten but the depth of field will also change.
+There are two physical adjustable parameters on the lens itself, the iris and the magnification. The upper adjustment ring is associated with magnification changes and the lower adjustment ring is associated with the iris. If you change the magnification, the required distance between the sample in the multiwell plate and the lens will need to be changed as well - higher magnification requires the lens to be closer to the sample, it will also result in a darker image and a requirement for more light (either by choosing a longer exposure, increasing the brightness of the LED, or adjusting the physical position of the light). Finally, by opening or closing the iris, the depth of field (i.e. depth of the sample that is in focus) can be adjusted. Typically greater depth of field is very welcome, but it comes at the cost of a darker image. So, a compromise is required and will need to be decided on a case-by-case basis.
 
-
-On the right you will see section termed `Camera View`, here you can capture still images using the `Snap` button and start a live video stream using the `Start/Stop Stream` button:
+Next to the 'Start/Stop Stream' button in the Camera View, is a 'Snap' button. This allows you to capture images dynamically while using the instrument. They are automatically saved in a 'snap-images' folder in the LEC application folder.
 
 <img src="assets/camera-startup.png"  width="80%">
 
-Still images are interactive, so you can zoom in and out, and move the image to find an improved view. Before starting the next step, you may wish to start the live video stream for easily finding the animals or subjects you wish to record using the LEC.
+Still images are interactive, so you can zoom in and out, and move the image to find an improved view. Before starting the next step, you may wish to start the live video stream, if you haven't already, for easily finding the animals or subjects you wish to record using the LEC.
 
 ***If you would like to change the camera settings you must exit the live stream before doing this so that your changes can take effect. Then when you have finished choosing your desired setttings, press the `Update` button before starting the live stream again.***
 
@@ -119,7 +127,7 @@ Still images are interactive, so you can zoom in and out, and move the image to 
 ### 5. USING MANUAL CONTROLS TO FIND AND SAVE POSITIONS
 -----------------
 
-The manual controls are entirely virtual and can be used as soon as the stage finishes homing. These can be found in the following section of the user interface:
+The manual controls can be used once the stage has finished homing. These can be found in the following section of the user interface:
 
 <img src="assets/manual-controls.png"  width="80%">
 
