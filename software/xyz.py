@@ -30,7 +30,7 @@ def which(iterable, obj):
     return are
 
 # Identify relevant well to well distances for 24, 48, 96 and 384 well plates and corresponding x_wells
-well_dists = {6:24.28, 8:17.14, 12:11.275, 24:5.625}
+well_dists = {6:18, 8:13, 12:9, 24:3.2}
 yLabs = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P'] 
 def gen_xy_old(xy1, xWells, yWells):
     '''
