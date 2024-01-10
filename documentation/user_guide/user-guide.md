@@ -177,7 +177,7 @@ The **XYZ Positions** section enables creation of X, Y and Z position lists:
 
 The acquisition parameters can be found at the bottom of the page of the user interface in the Acquisition section:
 
-<img src="assets/expt-setup"  width="80%">
+<img src="assets/expt-setup.png"  width="80%">
 
 Here are descriptions for each acquisition parameter:
 * **Number of positions**: Whether you would like to capture footage for only the current position (‘Single’) or all the XYZ positions you have recorded (‘Multiple’).
@@ -191,7 +191,7 @@ Once you have added in your desired acquisition parameters, you can now start an
 Progress of the experiemtn will be shown at the bottom of the user interface in the 'Experiment Progress' section. This enables tracking the progress of an experiment.
 
 
-<img src="assets/expt-progress"  width="80%">
+<img src="assets/expt-progress.png"  width="80%">
 
 
 
