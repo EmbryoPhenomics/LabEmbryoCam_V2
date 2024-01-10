@@ -30,11 +30,17 @@
 # INDEX
 -----------------
 * **1. HARDWARE SETUP**
+
 * **2. USER INTERFACE**
+
 * **3. XYZ CONTROLS AND SETTINGS**
+
 * **4. CAMERA VIEW**
+
 * **5. USING MANUAL CONTROLS TO FIND AND SAVE POSITIONS**
+
 * **6. SETTING AND STARTING ACQUISITIONS**
+
 * **7. NEXT STEPS**
 
 -----------------
@@ -221,20 +227,14 @@ Progress of the experiment will be shown at the bottom of the user interface in 
 
 
 
+------
 
------------------
 # 6. NEXT STEPS
------------------
+
+------
 
 After running an experiment you are strongly encouraged to make a backup of your video and ensure you have a good record of the settings, and hardware setup. This should  include an image of a graticule slide captured at the same magnification as used in the experiment - if you intend to make spatial measurements. You can use the 'Snap' function to produce this.  
 
 The analysis of your video will be highly dependant on study species, aims and the scale of the study. We provide a number of workflows, Python packages and guides on the processing and analysis of the types of video dataset produced using the LEC.
 
 https://github.com/EmbryoPhenomics/LabEmbryoCam_V2/tree/main/documentation/processing_video
-
-
-
-
-
-
-
