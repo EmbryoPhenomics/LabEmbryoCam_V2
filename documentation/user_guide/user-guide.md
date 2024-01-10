@@ -56,9 +56,9 @@ A terminal window will automatically open followed by the browser with the webse
 
 <img src="assets/global-ui.png"  width="80%">
 
-The LEC user interface is divded into a number of setctions
+The LEC user interface is divided into a number of setctions
 * A) **Experiment Settings** - for loading a configuration file to repopulate previously used settings.
-* B) **Camera View** - for adjusting the camera, streaming the camera feed, and snaping still images.
+* B) **Camera View** - for adjusting the camera, streaming the camera feed, and snapping still images.
 * C) **XYZ controls and settings** - for homing the XYZ stage, and moving the optics carriage around.
 * D) **XYZ Positions** - for populating a list of XYZ positions.
 * E) **XYZ View** - for interacting with XYZ positions, and automatically generating positions for wells of multiwell plates.
@@ -69,7 +69,7 @@ The LEC user interface is divded into a number of setctions
 -----------------
 ### 3. XYZ controls and settings
 -----------------
-The first step required in setting up any experiment with the LEC is to home, or 'Set Origin' the XYZ stage. This is essential to ensure that the correct origin is used when finding and creating positions and without doing this the XYZ stage will not be responsive. 
+The first step required in setting up any experiment with the LEC is to home, or 'Set Origin' of the XYZ stage. This is essential to ensure that the correct origin is used when finding and creating positions and without doing this the XYZ stage will not be responsive. 
 
 To home the stage, click the `Set Origin` button in the user interface.
 
@@ -95,18 +95,18 @@ Adjusting the camera and lighting settings can simply be achieved using the `Cam
 
 <img src="assets/cam-setup.png"  width="80%">
 
-Begin by choosing a resolution - 720 x 1080 is a good compromise between speed (i.e. maximum frame rate) and resolution, and clicking 'Update'.
+Begin by choosing a resolution - 1280 x 720 is a good compromise between speed (i.e. maximum frame rate) and resolution - and clicking 'Update'.
 
 A live stream can be initialised using 'Start/Stop Stream' - and a rotating cursor next to the button will indicate that the camera is running.
 
 Use the live display to ascertain what changes, if any, may be required.
 
-You can then use the three buttons - LED, Exposure and Frame-rate, to make adjustments as required. However, changes to the camera's - exposure, frame rate, and resolution, should only be made when the 'Start/Stop Stream is deactivated. **Changes are only implemented when clicking 'Update'.**
+You can then use the three tabs - LED, Exposure and Frame-rate, to make adjustments as required. However, changes to the camera's - exposure, frame rate, and resolution, should only be made when the 'Start/Stop Stream is deactivated. **Changes are only implemented when clicking 'Update'.**
 
 The following are descriptions for each of the settings in the Camera View.
 * **LED**: The percentage brightness of the LED ring light. Note that the lighting can also be adjusted by using the lighting mount up and down, and by screwing/unscrewing the darkfield adapter. The LED will by default go to sleep when not needed during an experiment.
 * **Exposure**: The shutter speed at which the camera operates in milliseconds - 20 ms is a good starting point.
-* **Frame-rate**: The frame-rate at which videos are captured. Note that for high resolutions, such as 2048x2048, you will need to reduce exposure time below 10ms if you would like to achieve a frame-rate higher than 15-20fps. 
+* **Frame-rate**: The frame-rate at which videos are captured. Note that for high resolutions, such as 2048x2048, you will need to reduce exposure time below 10ms if you would like to achieve a frame-rate higher than 10-15fps. 
 * **Resolution**: Presets for resolution at which images will be captured.
 
 ***For changes to the camera settings to take effect you must press the `Update` button at the bottom of the Camera Settings section.***
@@ -156,7 +156,7 @@ The **XYZ View** section will populate with the relative positions of the XYZ po
 
 Additionally, the other settings in the **XYZ View** are:
 * **Dimension**: Enabling this switch can switch between 2D or 3D view in the position plot, 3D view can be useful for visualising the z axis positions (i.e. seeing the relative heights of different positions).
-* **Generate XY**: This enables the automatic creation of the entirity of a multiwell plate's positions. This is deactivated, unless you first create a position (using the **XYZ Positions** section - see below) labelled A1 (corresponding to the top left corner of a multiwell plate. Once this is done, the **Generate XY** will use this position as the basis to create X and Y coordinates for all subsequent wells. 24, 48, 96 and 384 well plates are included.
+* **Generate XY**: This enables the automatic creation of the entirety of a multiwell plate's positions. This is deactivated, unless you first create a position (using the **XYZ Positions** section - see below) labelled A1 (corresponding to the top left corner of a multiwell plate. Once this is done, the **Generate XY** will use this position as the basis to create X and Y coordinates for all subsequent wells. 24, 48, 96 and 384 well plates are included.
   
 The **XYZ Positions** section enables creation of X, Y and Z position lists:
 
@@ -186,9 +186,9 @@ Here are descriptions for each acquisition parameter:
 * **Acquisition length**: How long to acquire video for each position, at each timepoint.
 * **Driver and Folder selection**: The full file path to the directory where you would like to save video. This should be selected using the Select button and navigating the browser that pops up.
 
-Once you have added in your desired acquisition parameters, you can now start an acquisition using the Start acquisition button!
+Once you have added in your desired acquisition parameters, you can now start an acquisition using the Start acquisition button.
 
-Progress of the experiemtn will be shown at the bottom of the user interface in the 'Experiment Progress' section. This enables tracking the progress of an experiment.
+Progress of the experiment will be shown at the bottom of the user interface in the 'Experiment Progress' section. This enables tracking the progress of an experiment.
 
 
 <img src="assets/expt-progress.png"  width="80%">
