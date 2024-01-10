@@ -197,6 +197,7 @@ Here are descriptions for each acquisition parameter:
 * **Acquisition interval**: How long to wait between each timepoint in minutes - you must consider how long it will take for each acquisition to complete, or risk the previous acquisition not finishing before the next starts.
 * **Acquisition length**: How long to acquire video for each position, at each timepoint.
 * **Driver and Folder selection**: The full file path to the directory where you would like to save video. This should be selected using the Select button and navigating the browser that pops up.
+* **Auto light off**: Whether to turn the LED light ring off between timepoints during an acquisition. 
 
 Once you have added in your desired acquisition parameters, you can now start an acquisition using the Start acquisition button.
 
