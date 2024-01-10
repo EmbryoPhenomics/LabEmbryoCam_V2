@@ -58,7 +58,7 @@ The LEC was initially developed for dark field imaging of developing aquatic emb
 ### 2. USER INTERFACE
 -----------------
 
-Once you have powered on your system, you can start the LabEmbryoCam (LEC) user interface by double clicking the icon on the desktop or in the Activities panel:
+Once you have powered on your system, you can enter the desktop environment of the LEC using the following password: `pi`. Once you have logged in, you can start the LabEmbryoCam (LEC) user interface by double clicking the icon on the desktop or in the Activities panel:
 
 <img src="assets/starting-webserver.png"  width="80%">
 
