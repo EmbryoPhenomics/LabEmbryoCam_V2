@@ -9,20 +9,28 @@
 
 <img src="assets/manual-qr.png"  width="30%">
 
------------------
-### INDEX
------------------
-* **1. Hardware setup**
-* **2. Starting the webserver**
-* **3. Homing the motorised XYZ stage**
-* **4. Setting up camera and starting live stream**
-* **5. Using manual controls to find and save desired positions**
-* **6. Set acquisition parameters and start acquisition**
------------------
 
 
 
 ***If you are using LabEmbryoCam, please consider joining the Google Group https://groups.google.com/g/labembryocam. Doing so will help contribute to the advancement of this opensource project, including staying up-to date with updates and receiving support.***
+
+
+
+
+
+
+-----------------
+### INDEX
+-----------------
+* **1. HARDWARE SETUP**
+* **2. USER INTERFACE**
+* **3. XYZ CONTROLS AND SETTINGS**
+* **4. CAMERA VIEW**
+* **5. USING MANUAL CONTROLS TO FIND AND SAVE POSITIONS**
+* **6. SETTING AND STARTING ACQUISITIONS**
+-----------------
+
+
 
 
 
@@ -69,7 +77,7 @@ The LEC user interface is divided into a number of setctions
 
 
 -----------------
-### 3. XYZ controls and settings
+### 3. XYZ CONTROLS AND SETTINGS
 -----------------
 The first step required in setting up any experiment with the LEC is to home, or 'Set Origin' of the XYZ stage. This is essential to ensure that the correct origin is used when finding and creating positions and without doing this the XYZ stage will not be responsive. 
 
