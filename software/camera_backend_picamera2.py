@@ -136,8 +136,8 @@ class CaptureGenerator:
         self.cam_cls.camera.set_controls({
             'FrameRate': fps, 
             'ExposureTime': ss, 
-            'AeEnable': False,
-            'AwbEnable': False,
+            'AeEnable': 0,
+            'AwbEnable': 0,
             #'Contrast': co
         })
         print('Set camera controls')
@@ -249,8 +249,8 @@ class PiCam2():
         self.camera.set_controls({
             'FrameRate': fps, 
             'ExposureTime': ss, 
-            'AeEnable': False,
-            'AwbEnable': False,
+            'AeEnable': 0,
+            'AwbEnable': 0,
             #'Contrast': co
         })
         
@@ -282,8 +282,8 @@ class PiCam2():
         self.camera.set_controls({
             'FrameRate': fps, 
             'ExposureTime': ss, 
-            'AeEnable': False,
-            'AwbEnable': False,
+            'AeEnable': 0,
+            'AwbEnable': 0,
             #'Contrast': co
         })
         print('Set camera controls')

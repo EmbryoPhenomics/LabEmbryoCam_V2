@@ -41,7 +41,11 @@ import psutil
 
 ## Diskcache
 import diskcache
-cache = diskcache.Cache("./cache")
+
+if os.path.exists('./cache'):
+    shutil.rmtree('./cache')
+
+cache = diskcache.Cache('./cache')
 long_callback_manager = DiskcacheLongCallbackManager(cache)
 
 # App specific modules
@@ -51,7 +55,6 @@ import renderers
 import emails
 import leds
 import xyz
-
 
 # Simple low-level functions 
 def all(iterable, obj):
@@ -109,27 +112,50 @@ def check_devices():
     print(manual_control_port, xyz_port)
     return manual_control_port, xyz_port
 
+# Source: https://gist.github.com/IdeaKing/11cf5e146d23c5bb219ba3508cca89ec
+def resize_with_pad(image, new_shape, padding_color=(0,0,0)):
+    """Maintains aspect ratio and resizes with padding.
+    Params:
+        image: Image to be resized.
+        new_shape: Expected (width, height) of new image.
+        padding_color: Tuple in BGR of padding color
+    Returns:
+        image: Resized image with padding
+    """
+    original_shape = (image.shape[1], image.shape[0])
+    ratio = float(max(new_shape))/max(original_shape)
+    new_size = tuple([int(x*ratio) for x in original_shape])
+    image = cv2.resize(image, new_size)
+    delta_w = new_shape[0] - new_size[0]
+    delta_h = new_shape[1] - new_size[1]
+    top, bottom = delta_h//2, delta_h-(delta_h//2)
+    left, right = delta_w//2, delta_w-(delta_w//2)
+    image = cv2.copyMakeBorder(image, top, bottom, left, right, cv2.BORDER_CONSTANT, value=padding_color)
+    return image
+
 def gen(camera):
     while True:
         if camera_state.trigger:
             if camera_state.state == 'streaming':
+                # Deprecated functionality ----------------------
+                # # Reduce resolution for streaming
+                # width, height = camera.get('width'), camera.get('height')
+                # print(width, height)
+                # if width / height == 1:
+                #     camera.set('width', 512)
+                #     camera.set('height', 512)
+                # else:
+                #     camera.set('width', 640)
+                #     camera.set('height', 480)
 
-                # Reduce resolution for streaming
-                width, height = camera.get('width'), camera.get('height')
-                print(width, height)
-                if width / height == 1:
-                    camera.set('width', 512)
-                    camera.set('height', 512)
-                else:
-                    camera.set('width', 640)
-                    camera.set('height', 480)
-
-                width, height = camera.get('width'), camera.get('height')
-                print(width, height)
+                # width, height = camera.get('width'), camera.get('height')
+                # print(width, height)
+                # -----------------------------------------------
 
                 with camera.platform.start_capture_stream() as cap_gen:
                     for frame in cap_gen:
                         if camera_state.trigger:
+                            frame = resize_with_pad(frame, (640, 480))
                             frame = camera.platform.frame_to_bytes(frame)
                             yield (b'--frame\r\n'
                                    b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
@@ -341,9 +367,7 @@ camera.startup(cam_type)
 # ------------------ Html rendering callbacks ----------------- #
 # ============================================================= #
 @app.callback(
-    output=[
-        Output('exposure', 'value'),
-    ],
+    output=Output('exposure', 'value'),
     inputs=[
         Input('connect-cam-callback', 'children'),
         Input('loaded-data-callback', 'children')
@@ -417,6 +441,7 @@ def update_camera_settings(n_clicks, cam_init, exposure, resolution, fps):
             camera.set('width', width)
             camera.set('height', height)
             camera.set('framerate', fps)
+            return trigger
         else:
             return dash.no_update
     else:
@@ -443,10 +468,6 @@ class TabState:
 )
 def start_stop_live_view(n_clicks, cam_init, mode):
     if n_clicks is not None:
-        # with open('./app_config.json', 'r') as conf:
-        #     app_conf = json.load(conf)
-        #     local_stream = app_conf['local_camera_stream']
-
         if (camera_state.trigger and camera_state.state == 'streaming'):
             camera_state.on_off('streaming')
             return trigger, trigger, None
@@ -456,15 +477,16 @@ def start_stop_live_view(n_clicks, cam_init, mode):
         else:
             # Desktop ----
             if mode:
-                camera.stream()
-                return trigger, trigger, dbc.Spinner(color='danger', size='md')
+                TabState.state = 'stream-tab'
+                camera.stream(separate_thread=True)
+                return trigger, trigger, dbc.Spinner(color='primary', size='md')
             # Browser -----
             else:
                 TabState.state = 'stream-tab'
                 camera_state.on_off('streaming')
-                return trigger, trigger, dbc.Spinner(color='danger', size='md')
+                return trigger, trigger, dbc.Spinner(color='primary', size='md')
     else:
-        return dash.no_update, dash.no_update
+        return dash.no_update, dash.no_update, trigger
 
 @app.callback(
     output=[
@@ -864,15 +886,13 @@ units_per_sec = 6
         (Output('update-camera-settings', 'disabled'), True, False),
         (Output('hardware-brightness', 'disabled'), True, False),
         (Output('load-config-button', 'disabled'), True, False),
-        (Output('grab-xy', 'disabled'), True, False),
-        (Output('replace-xy-button', 'disabled'), True, False),
         # (Output('xy_coords', 'editable'), True, False), # Removed for now because it makes the table uneditable despite arguments being correct.
     ],
     cancel=[Input('cancel-acquire-button', 'n_clicks')],
     progress=[
         Output("timepoint-pg", "value"), Output("timepoint-pg", "label"), Output("timepoint-pg", "max"), 
         Output("embryo-pg", "value"), Output("embryo-pg", "label"), Output("embryo-pg", "max"), 
-    ],
+    ]
 )
 def acquire(set_progress, n_clicks, cam_init, timepoints, length, time, exposure, fps, resolution, user_path, xy_data, acq_num):
     if n_clicks is None:
@@ -1128,9 +1148,27 @@ def acquire(set_progress, n_clicks, cam_init, timepoints, length, time, exposure
 # -------------------------------------- XYZ stage callbacks ------------------------------------ #
 # =============================================================================================== #
 
-@app.callback(
+@app.long_callback(
     output=Output('xyz-homing-callback', 'children'),
-    inputs=[Input('home-xy-button', 'n_clicks')])
+    inputs=[Input('home-xy-button', 'n_clicks')],
+    manager=long_callback_manager,
+    running=[
+        (Output('home-xy-button', 'children'), [dbc.Spinner(size='sm'), ' Homing...'], 'Set Origin'),
+        (Output('left-diag-xy-up', 'disabled'), True, False),
+        (Output('up-xy', 'disabled'), True, False),
+        (Output('right-diag-xy-up', 'disabled'), True, False),
+        (Output('left-xy', 'disabled'), True, False),
+        (Output('right-xy', 'disabled'), True, False),
+        (Output('left-diag-xy-down', 'disabled'), True, False),
+        (Output('down-xy', 'disabled'), True, False),
+        (Output('right-diag-xy-down', 'disabled'), True, False),
+        (Output('up-z', 'disabled'), True, False),
+        (Output('down-z', 'disabled'), True, False),
+        (Output('grab-xy', 'disabled'), True, False),
+        (Output('replace-xy-button', 'disabled'), True, False),
+    ],
+    prevent_initial_call=True
+)
 def home_xy_stage(n_clicks):
     if n_clicks:
         hardware.setOrigin()
@@ -1140,6 +1178,14 @@ def home_xy_stage(n_clicks):
     else:
         return dash.no_update
 
+@app.callback(
+    output=Output('xyz-homing-set-origin', 'children'),
+    inputs=[Input('xyz-homing-callback', 'children')],
+    prevent_initial_call=True)
+def update_relative_xyz(children):
+    x,y,z = hardware.grabXY()
+    relative.start(x=x, y=y, z=z)
+    return trigger
 
 # XY movements -----------------------------------------------------------
 class Nclick:
@@ -1321,10 +1367,8 @@ def down_z(n_clicks, mag):
 
 @app.callback(
     output=Output('grab-xy-callback', 'children'),
-    inputs=[
-        Input('grab-xy', 'n_clicks'),
-        Input('xy_coords', 'data'),
-    ]
+    inputs=[Input('grab-xy', 'n_clicks')],
+    state=[State('xy_coords', 'data')]
 )
 def grab_xy(n_clicks, data):
     if n_clicks:
@@ -1426,7 +1470,7 @@ def enable_generate_xy(xy, acq_running):
             else:
                 return True, True
         else:
-            return False, False
+            return True, True
 
 # Pre-defined plate sizes
 plate_wells = {24:(6,4), 48:(8,6), 96:(12,8), 384:(24,16)}
@@ -1604,7 +1648,6 @@ def teardown():
     camera.close()
     hardware.close()
     leds.close()
-    #raise KeyboardInterrupt
 
 @app.callback(
     output=Output('close-app-div', 'children'),
@@ -1614,7 +1657,6 @@ def shutdown_app(n_clicks):
         teardown()
         print('Shutting down...')
         sys.exit()
-        #os.kill(os.getpid(), signal.SIGTERM)
     else:
         return dash.no_update
 

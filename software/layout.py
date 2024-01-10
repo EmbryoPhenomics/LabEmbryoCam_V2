@@ -84,6 +84,7 @@ def app_layout():
                                         html.Br(),
                                         dbc.Button('Set Origin', id='home-xy-button', size='lg'),
                                         html.Div(id='xyz-homing-callback'),
+                                        html.Div(id='xyz-homing-set-origin'),
                                     ], style={'width': '40%', 'display': 'table-cell'}),
                                     html.Div(children=[
                                         html.Br(),
