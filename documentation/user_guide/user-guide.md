@@ -45,7 +45,7 @@ The LEC was initially developed for dark field imaging of developing aquatic emb
 
 
 -----------------
-### 2. STARTING THE USER INTERFACE
+### 2. USER INTERFACE
 -----------------
 
 Once you have powered on your system, you can start the LabEmbryoCam (LEC) user interface by double clicking the icon on the desktop or in the Activities panel:
@@ -59,7 +59,9 @@ A terminal window will automatically open followed by the browser with the webse
 
 
 
-
+-----------------
+### 3. USER INTERFACE
+-----------------
 
 
 
@@ -107,7 +109,7 @@ The following are descriptions for each of the settings in the Camera View.
 ***For changes to the camera settings to take effect you must press the `Update` button at the bottom of the Camera Settings section.***
 
 **Note**
-There are two physical adjustable parameters on the lens itself, the iris and the magnification. The upper adjustment ring is associated with magnification changes and the lower adjustment ring is associated with the iris. If you change the magnification, the required distance between the sample in the multiwell plate and the lens will need to be changed as well - higher magnification requires the lens to be closer to the sample, it will also result in a darker image and a requirement for more light (either by choosing a longer exposure, increasing the brightness of the LED, or adjusting the physical position of the light). Finally, by opening or closing the iris, the depth of field (i.e. depth of the sample that is in focus) can be adjusted. Typically greater depth of field is very welcome, but it comes at the cost of a darker image. So, a compromise is required and will need to be decided on a case-by-case basis.
+There are two physical adjustable parameters on the lens itself, the iris and the magnification. The upper adjustment ring is for adjusting the magnification and the lower adjustment ring is for adjusting the iris. If you change the magnification, the required distance between the sample in the multiwell plate and the lens will need to be changed as well - higher magnification requires the lens to be closer to the sample, it will also result in a darker image and perhaps even a requirement for more light (either by choosing a longer exposure, increasing the brightness of the LED, or adjusting the physical position of the light). Finally, by opening or closing the iris, the depth of field (i.e. depth of the sample that is in focus) can be adjusted. Typically greater depth of field is very welcome, but it comes at the cost of a darker image. So, a compromise is required and will need to be decided on a case-by-case basis.
 
 Next to the 'Start/Stop Stream' button in the Camera View, is a 'Snap' button. This allows you to capture images dynamically while using the instrument. They are automatically saved in a 'snap-images' folder in the LEC application folder.
 
