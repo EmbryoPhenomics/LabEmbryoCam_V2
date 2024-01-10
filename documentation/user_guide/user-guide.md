@@ -1,18 +1,25 @@
 # LabEmbryoCam User Guide
 
-<img src="assets/LEC_render.png"  width="80%">
+<img src="assets/LEC_render.png"  width="60%">
 
 #### ***An opensource platform for automated measurement of developing animals. The LabEmbryoCam is a project originating with the EmbryoPhenomics research group at the University of Plymouth, UK. It has been made possible by support from UKRI, NERC, BBSRC and Plymouth Science Park.***
 
 
-**This is a live document. To see the most recent version, scan the QR code below.**
-
-<img src="assets/manual-qr.png"  width="30%">
 
 
 
 
-***If you are using LabEmbryoCam, please consider joining the Google Group https://groups.google.com/g/labembryocam. Doing so will help contribute to the advancement of this opensource project, including staying up-to date with updates and receiving support.***
+***Consider joining the Google Group https://groups.google.com/g/labembryocam. Doing so will help contribute to the advancement of this opensource project, and staying up-to date with updates and receiving support.***
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -20,7 +27,7 @@
 
 
 -----------------
-### INDEX
+# INDEX
 -----------------
 * **1. HARDWARE SETUP**
 * **2. USER INTERFACE**
@@ -28,16 +35,27 @@
 * **4. CAMERA VIEW**
 * **5. USING MANUAL CONTROLS TO FIND AND SAVE POSITIONS**
 * **6. SETTING AND STARTING ACQUISITIONS**
------------------
-
-
-
-
-
-
+* **7. NEXT STEPS**
 
 -----------------
-### 1. HARDWARE SETUP
+
+
+<center>THIS IS A LIVE DOCUMENT.</center>
+
+
+
+<center>TO SEE THE MOST RECENT VERSION, SCAN THE QR CODE BELOW.</center>
+
+
+
+<img src="assets/manual-qr.png"  width="30%">
+
+
+
+
+
+-----------------
+# 1. HARDWARE SETUP
 -----------------
 The LEC is a versatile multidimensional imaging platform. A broad range of magnifications are possible, using different optical hardware, particularly lenses. 
 
@@ -55,7 +73,7 @@ The LEC was initially developed for dark field imaging of developing aquatic emb
 
 
 -----------------
-### 2. USER INTERFACE
+# 2. USER INTERFACE
 -----------------
 
 Once you have powered on your system, you can enter the desktop environment of the LEC using the following password: `pi`. Once you have logged in, you can start the LabEmbryoCam (LEC) user interface by double clicking the icon on the desktop or in the Activities panel:
@@ -77,7 +95,7 @@ The LEC user interface is divided into a number of setctions
 
 
 -----------------
-### 3. XYZ CONTROLS AND SETTINGS
+# 3. XYZ CONTROLS AND SETTINGS
 -----------------
 The first step required in setting up any experiment with the LEC is to home, or 'Set Origin' of the XYZ stage. This is essential to ensure that the correct origin is used when finding and creating positions and without doing this the XYZ stage will not be responsive. 
 
@@ -97,7 +115,7 @@ To home the stage, click the `Set Origin` button in the user interface.
 
 
 -----------------
-### 4. CAMERA VIEW
+# 4. CAMERA VIEW
 -----------------
 Camera and lighting settings will need adjusting to suit your experimental system - species, study aim etc.  
 
@@ -139,7 +157,7 @@ Still images are interactive, so you can zoom in and out, and move the image to 
 
 
 -----------------
-### 5. USING MANUAL CONTROLS TO FIND AND SAVE POSITIONS
+# 5. USING MANUAL CONTROLS TO FIND AND SAVE POSITIONS
 -----------------
 
 The manual controls can be used once the stage has finished homing. These can be found in **XYZ controls and settings**:
@@ -170,6 +188,7 @@ Additionally, the other settings in the **XYZ View** are:
 * **Dimension**: Enabling this switch can switch between 2D or 3D view in the position plot, 3D view can be useful for visualising the z axis positions (i.e. seeing the relative heights of different positions).
 * **Generate XY**: This enables the automatic creation of the entirety of a multiwell plate's positions. This is deactivated, unless you first create a position (using the **XYZ Positions** section - see below) labelled A1 (corresponding to the top left corner of a multiwell plate. Once this is done, the **Generate XY** will use this position as the basis to create X and Y coordinates for all subsequent wells. 24, 48, 96 and 384 well plates are included.
   
+
 The **XYZ Positions** section enables creation of X, Y and Z position lists:
 
 * **Current**: Press this button to retrieve the coordinates of the current position where the stage is at. A new entry will be added into the position list below where it can be edited further.
@@ -177,19 +196,13 @@ The **XYZ Positions** section enables creation of X, Y and Z position lists:
 * **Position list table**: Position list where coordinates are recorded. The first column is for removing position entries from the list, simply click the x icon for the position you’d like to remove. The second column is to permit selection of specific position entries for updating their coordinates. Finally, columns X, Y, Z and Label are all editable similar to an excel spreadsheet.
 
 
-
-
-
-
-
-
 -----------------
-### 6. SETTING AND STARTING ACQUISITIONS
+# 6. SETTING AND STARTING ACQUISITIONS
 -----------------
 
 The acquisition parameters can be found at the bottom of the page of the user interface in the Acquisition section:
 
-<img src="assets/expt-setup.png"  width="80%">
+<img src="assets/expt-setup.png"  width="60%">
 
 Here are descriptions for each acquisition parameter:
 * **Number of positions**: Whether you would like to capture footage for only the current position (‘Single’) or all the XYZ positions you have recorded (‘Multiple’).
@@ -204,7 +217,21 @@ Once you have added in your desired acquisition parameters, you can now start an
 Progress of the experiment will be shown at the bottom of the user interface in the 'Experiment Progress' section. This enables tracking the progress of an experiment.
 
 
-<img src="assets/expt-progress.png"  width="80%">
+<img src="assets/expt-progress.png"  width="100%">
+
+
+
+
+-----------------
+# 6. NEXT STEPS
+-----------------
+
+After running an experiment you are strongly encouraged to make a backup of your video, but also to consider how best to analyse it. This will be highly dependant on study species, aims and the scale of the study. We provide a number of workflows, Python packages and guides on the processing and analysis of the types of video dataset produced using the LEC. 
+
+https://github.com/EmbryoPhenomics/LabEmbryoCam_V2/tree/main/documentation/processing_video
+
+
+
 
 
 
