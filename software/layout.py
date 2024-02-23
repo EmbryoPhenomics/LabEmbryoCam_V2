@@ -37,7 +37,12 @@ tab_selected_style_main = {
     'padding': '6px'
 }
 
-def app_layout():
+def app_layout(sensor_modes):
+    camera_options = []
+    for i,mode in enumerate(sensor_modes):
+        w,h = mode['size']
+        camera_options.append(dict(label=f'{w}x{h}', value=i))
+
     return html.Div(children=[
 
     html.Div(className='row', children=[
@@ -53,16 +58,9 @@ def app_layout():
                         dbc.Card([
                             dbc.CardHeader('Experiment Settings', style={'font-weight': 'bold'}),
                             dbc.CardBody([
-                                dcc.Input(
-                                    id='config-name-input',
-                                    type='text',
-                                    placeholder='Please name a config file...'),
                                 html.Div(children=[
                                     html.Div(children=[
-                                        dcc.Upload(
-                                            id='load-config-button', 
-                                            multiple=False,
-                                            children=dbc.Button('Load', size='lg'))
+                                        dbc.Button(id='load-config-button', size='lg', children='Load')
                                     ], style={'width': '10%', 'display': 'table-cell'}),
 
                                     html.Div(children=[
@@ -313,6 +311,18 @@ def app_layout():
 
                                 html.Br(),
 
+                                html.Div(children=[
+                                    html.Div(children=[
+                                        html.Label(children='Turn off light between timepoints:')
+                                    ], style={'width': '50%', 'display': 'table-cell'}),
+                                    html.Div(children=[
+                                        daq.ToggleSwitch(
+                                            id='light-auto-dimming',
+                                            value=False,
+                                            label=['Yes', 'No']),
+                                    ], style={'width': '50%', 'display': 'table-cell'}),
+                                ], style={'width': '100%', 'display': 'table'}),
+
                                 # html.Div(children=[
                                 #     html.Div(children=[
                                 #         html.Label(children='Disk space (available/total)')
@@ -336,17 +346,22 @@ def app_layout():
                                 html.Br(),
 
                                 dbc.Button('Start acquisition', id='acquire-button', size='lg'),
-                                html.Div(id='hiddenAcquire'),
                                 dbc.Button('Cancel acquisition', id='cancel-acquire-button', size='lg'),
+                                html.Div(id='acquisition_state'),
+                                html.Div(id='cancel_state'),
+                                html.Div(id='acquisition_progress_state'),
+
+                                dcc.Interval(id='acquisition_progress_interval', disabled=True),
+
                                 dbc.Modal(
                                     [
                                         dbc.ModalHeader(dbc.ModalTitle("Acquisition Error")),
                                         dbc.ModalBody("Please cancel the live stream before starting an acquisition."),
-                                        dbc.ModalFooter(
-                                            dbc.Button(
-                                                "Close", id="close-stream-popup", className="ms-auto", n_clicks=0
-                                            )
-                                        ),
+                                        # dbc.ModalFooter(
+                                        #     dbc.Button(
+                                        #         "Close", id="close-stream-popup", className="ms-auto", n_clicks=0
+                                        #     )
+                                        # ),
                                     ],
                                     id="acquisition-live-stream-popup",
                                     is_open=False,
@@ -354,12 +369,12 @@ def app_layout():
                                 dbc.Modal(
                                     [
                                         dbc.ModalHeader(dbc.ModalTitle("Acquisition Error")),
-                                        dbc.ModalBody("Folder already exists, please change it to not overwrite existing data."),
-                                        dbc.ModalFooter(
-                                            dbc.Button(
-                                                "Close", id="close-folder-popup", className="ms-auto", n_clicks=0
-                                            )
-                                        ),
+                                        dbc.ModalBody("Files already in folder, please change folder to not overwrite existing data."),
+                                        # dbc.ModalFooter(
+                                        #     dbc.Button(
+                                        #         "Close", id="close-folder-popup", className="ms-auto", n_clicks=0
+                                        #     )
+                                        # ),
                                     ],
                                     id="acquisition-folder-popup",
                                     is_open=False,
@@ -429,16 +444,8 @@ def app_layout():
                                                         dcc.Dropdown(
                                                             id='resolution-preset',
                                                             placeholder='Please select a resolution...',
-                                                            value=640,
-                                                            options=[
-                                                                dict(label='640x480', value=640),
-                                                                dict(label='1024x768', value=768),
-                                                                dict(label='1280x720', value=1280),
-                                                                dict(label='1920x1080', value=1920),
-                                                                dict(label='256x256', value=256),
-                                                                dict(label='512x512', value=512),
-                                                                dict(label='1024x1024', value=1024),
-                                                                dict(label='2048x2048', value=2048)],
+                                                            value=0,
+                                                            options=camera_options,
                                                             disabled=False,
                                                             persistence=True,
                                                             persistence_type='session'),
@@ -479,13 +486,17 @@ def app_layout():
                                                 html.Div(children=[
                                                     html.Div(children=[
                                                         dbc.Button('Snap', id='test-frame-button', size='lg')
-                                                    ], style={'width': '40%', 'display': 'table-cell'}),
+                                                    ], style={'width': '30%', 'display': 'table-cell'}),
+                                                    html.Div(children=[
+                                                        dbc.Button('Test', id='test-acq-button', size='lg'),
+                                                        html.Div(id='test-acq-div'),
+                                                    ], style={'width': '20%', 'display': 'table-cell'}),
                                                     html.Div(children=[
                                                         dbc.Button('Start/Stop Stream', id='camera-live-stream', size='lg'),
-                                                    ], style={'width': '50%', 'display': 'table-cell'}),
+                                                    ], style={'width': '40%', 'display': 'table-cell'}),
                                                     html.Div(children=[
                                                         html.Div(id='streaming-spinner')
-                                                    ], style={'width': '10%', 'display': 'table-cell'}),
+                                                    ], style={'width': '`10%', 'display': 'table-cell'}),
                                                 ], style={'width': '100%', 'display': 'table'}),
                                             ])
                                         ])

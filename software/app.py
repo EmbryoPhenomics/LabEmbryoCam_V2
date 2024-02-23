@@ -6,6 +6,7 @@ from dash import dcc, html, Input, Output, State, ctx
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 import cv2
+import gc
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
 import subprocess
@@ -50,11 +51,12 @@ long_callback_manager = DiskcacheLongCallbackManager(cache)
 
 # App specific modules
 import layout
-from camera import Camera
+import camera_backend_picamera2 as picam2
 import renderers
 import emails
 import leds
 import xyz
+from acquisition import Acquisition
 
 # Simple low-level functions 
 def all(iterable, obj):
@@ -112,6 +114,26 @@ def check_devices():
     print(manual_control_port, xyz_port)
     return manual_control_port, xyz_port
 
+def check_camera():
+    proc = subprocess.Popen(['libcamera-hello', '--list-cameras'], stdout=subprocess.PIPE)
+    
+    imx_line = None
+    while True:
+        line = proc.stdout.readline()
+        if not line:
+            break
+        
+        line = str(line.rstrip())
+        if 'imx' in line:
+            imx_line = line
+    
+    if not imx_line:
+        raise SystemError('No cameras detected. Aborting startup seqeunce.')
+        
+    imx_id = imx_line.find('imx')
+    camera_model = imx_line[imx_id:imx_id+6]
+    return camera_model 
+
 # Source: https://gist.github.com/IdeaKing/11cf5e146d23c5bb219ba3508cca89ec
 def resize_with_pad(image, new_shape, padding_color=(0,0,0)):
     """Maintains aspect ratio and resizes with padding.
@@ -133,39 +155,29 @@ def resize_with_pad(image, new_shape, padding_color=(0,0,0)):
     image = cv2.copyMakeBorder(image, top, bottom, left, right, cv2.BORDER_CONSTANT, value=padding_color)
     return image
 
-def gen(camera):
+def gen(camera_settings):
     while True:
         if camera_state.trigger:
+
+            exposure = camera_settings.settings['exposure']
+            fps = camera_settings.settings['framerate']
+            sensor_mode = camera_settings.settings['sensor_mode']
+
             if camera_state.state == 'streaming':
-                # Deprecated functionality ----------------------
-                # # Reduce resolution for streaming
-                # width, height = camera.get('width'), camera.get('height')
-                # print(width, height)
-                # if width / height == 1:
-                #     camera.set('width', 512)
-                #     camera.set('height', 512)
-                # else:
-                #     camera.set('width', 640)
-                #     camera.set('height', 480)
-
-                # width, height = camera.get('width'), camera.get('height')
-                # print(width, height)
-                # -----------------------------------------------
-
-                with camera.platform.start_capture_stream() as cap_gen:
+                with picam2.VideoGenerator(exposure, fps, sensor_mode) as cap_gen:
                     for frame in cap_gen:
                         if camera_state.trigger:
                             frame = resize_with_pad(frame, (640, 480))
-                            frame = camera.platform.frame_to_bytes(frame)
+                            frame = picam2.frame_to_bytes(frame)
                             yield (b'--frame\r\n'
                                    b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
                         else:
                             break
 
+            # Deprecated and unused ---------------------
             elif camera_state.state == 'snapshot':
-                frame = camera.grab()
-                print(frame.shape)
-                frame = camera.platform.frame_to_bytes(frame)
+                frame = picam2.still_capture()
+                frame = picam2.frame_to_bytes(frame)
                 yield (b'--frame\r\n'
                        b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
                 camera_state.trigger = False
@@ -238,15 +250,15 @@ class CameraConfigLoad:
     # Only used as backend store for camera settings loaded through config file
     def __init__(self):
         self.exposure = None
-        self.contrast = None
         self.width = None
         self.height = None
+        self.sensor_mode = None
         self.framerate = None
 
 class ExperimentJobLog:
-    # To resume acquisitions that have been stopped during acquisition.
     def __init__(self):
         self.log = {}
+        self.current = dict(replicate=None, timepoint=None)
 
     def startup(self, replicates, timepoints):
         for r in replicates:
@@ -257,6 +269,8 @@ class ExperimentJobLog:
 
     def update(self, replicate, timepoint, dt):
         self.log[replicate]['acq_time'][timepoint] = dt
+        self.current['replicate'] = replicate
+        self.current['timepoint'] = timepoint
 
     def clear(self):
         self.log = {}
@@ -285,7 +299,7 @@ class RelativeXYZ:
         # Limits
         self.x1, self.x2 = (22, 210)
         self.y1, self.y2 = (0, 80)
-        self.z1, self.z2 = (0, 10)
+        self.z1, self.z2 = (0, 20)
 
     def start(self, x, y, z):
         self.x = x
@@ -309,31 +323,23 @@ class RelativeXYZ:
 
 relative = RelativeXYZ()
 
-resolution_presets = {
-    384: (512, 384),
-    640: (640, 480),
-    768: (1024, 768),
-    1280:(1280, 720), 
-    1920: (1920, 1080),
-    256: (256, 256),
-    512: (512, 512),
-    1024: (1024, 1024),
-    2048: (2048, 2048)
-}
-
 manual_control_port, xyz_port = check_devices()
-# manual_control_port, xyz_port = '/dev/ttyACM0', '/dev/ttyACM1'
+sensor_modes = picam2.get_sensor_modes()
+camera_model = check_camera()
 
 # Initiate serial connections
 manual_control_serial = serial.Serial(manual_control_port, 115200)
 xyz_serial = serial.Serial(xyz_port, 115200)
 
 camera_state = CameraState()
+camera_settings = picam2.CameraSettings()
+live_stream = picam2.LiveStream()
+
 experimental_log = ExperimentJobLog()
-hardware = xyz.StageHardware(xyz_serial, None)
+acquisition = Acquisition()
+stage = xyz.StageHardware(xyz_serial, None)
 coord_data = xyz.Coordinates()
 leds = leds.HardwareBrightness(manual_control_serial)
-camera = Camera(benchmark=True)
 loaded_camera_settings = CameraConfigLoad() 
 acquisition_state = AcquisitionState()
 user_input_store = UserInputStore()
@@ -341,7 +347,7 @@ user_input_store = UserInputStore()
 server = Flask(__name__)
 app = dash.Dash(__name__, server=server, long_callback_manager=long_callback_manager, external_stylesheets=[dbc.themes.BOOTSTRAP, './assets/app.css', dbc.icons.FONT_AWESOME])
 app.config['suppress_callback_exceptions'] = True 
-app.layout = layout.app_layout()
+app.layout = layout.app_layout(sensor_modes)
 # app.css.append_css({'external_url': 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css'})
 
 # For callbacks where no return is needed
@@ -362,8 +368,6 @@ if emails_on == 'on':
     timelib.sleep(1)
 email.close()
 
-camera.startup(cam_type)
-
 # ------------------ Html rendering callbacks ----------------- #
 # ============================================================= #
 @app.callback(
@@ -374,42 +378,49 @@ camera.startup(cam_type)
     ])
 def update_exposure_ui(cam_init, loaded_data):
     if trigger not in [loaded_data]:
-        exposure = camera.get('exposure') / 1000 # For ms on pi
+        exposure = camera_settings.get('exposure') / 1000 # For ms on pi
     else:
         exposure = loaded_camera_settings.exposure / 1000 # For ms on pi
     return exposure
 
 @app.callback(
-    output=[
-        Output('resolution-preset', 'value'),
-        Output('resolution-preset', 'disabled')
-    ],
+    output=[Output('resolution-preset', 'value')],
     inputs=[
         Input('connect-cam-callback', 'children'),
         Input('loaded-data-callback', 'children')
     ])
 def update_resolution_ui(cam_init, loaded_data):
     if trigger not in [loaded_data]:
-        width = camera.get('width')
-        height = camera.get('height')
-
-        return width, False
+        mode = camera_settings.get('sensor_mode')
+        return [mode]
     else:
-        width, height = loaded_camera_settings.width, loaded_camera_settings.height
-        return width, False
+        mode = loaded_camera_settings.sensor_mode
+        return [mode]
 
 @app.callback(
-    output=Output('fps', 'value'),
+    output=[
+        Output('fps', 'value'),
+        Output('fps', 'min'),
+        Output('fps', 'max')
+    ],
     inputs=[
         Input('connect-cam-callback', 'children'),
-        Input('loaded-data-callback', 'children')
+        Input('loaded-data-callback', 'children'),
+        Input('resolution-preset', 'value'),
+        Input('exposure', 'value')
     ])
-def update_fps_ui(cam_init, loaded_data):
+def update_fps_ui(cam_init, loaded_data, mode, exposure):
+    sensor_mode = sensor_modes[mode]
+    min_fps = 1
+    max_fps = round(sensor_mode['fps'])
+    max_fps_at_exp = round(1 / ((exposure*1000) / 1e6))
+    fps_range = (min_fps, max_fps if max_fps_at_exp > max_fps else max_fps_at_exp)
+        
     if trigger not in [loaded_data]:
-        fps = camera.get('framerate')
+        fps = camera_settings.get('framerate')       
     else:
         fps = loaded_camera_settings.framerate
-    return fps  
+    return (fps if fps < fps_range[1] else fps_range[1], *fps_range)  
 
 
 # ============================================================= #
@@ -433,23 +444,16 @@ def update_hardware_brightness(value):
     ])
 def update_camera_settings(n_clicks, cam_init, exposure, resolution, fps):
     if n_clicks:
-        if camera.platform:
-            print(resolution)
-            width, height = resolution_presets[resolution]
-
-            camera.set('exposure', exposure * 1000) # Convert back to exposure units on pi
-            camera.set('width', width)
-            camera.set('height', height)
-            camera.set('framerate', fps)
-            return trigger
-        else:
-            return dash.no_update
+        camera_settings.set('exposure', exposure * 1000) # Convert back to exposure units on pi
+        camera_settings.set('sensor_mode', resolution)
+        camera_settings.set('framerate', fps)
+        return trigger  
     else:
         return dash.no_update
 
 @server.route('/video_feed')
 def video_feed():
-    return Response(gen(camera),
+    return Response(gen(camera_settings),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
 class TabState:
@@ -471,14 +475,21 @@ def start_stop_live_view(n_clicks, cam_init, mode):
         if (camera_state.trigger and camera_state.state == 'streaming'):
             camera_state.on_off('streaming')
             return trigger, trigger, None
-        elif camera.platform.is_streaming:
-            camera.platform.key = 27 # stop stream by simulating key press
+        elif live_stream.is_streaming:
+            live_stream.stop()
             return trigger, trigger, None
         else:
             # Desktop ----
             if mode:
                 TabState.state = 'stream-tab'
-                camera.stream(separate_thread=True)
+
+                exposure = camera_settings.settings['exposure']
+                fps = camera_settings.settings['framerate']
+                sensor_mode = camera_settings.settings['sensor_mode']
+                
+                print('SENSOR_MODE', sensor_mode)
+                
+                live_stream.start(exposure, fps, sensor_mode)
                 return trigger, trigger, dbc.Spinner(color='primary', size='md')
             # Browser -----
             else:
@@ -487,6 +498,24 @@ def start_stop_live_view(n_clicks, cam_init, mode):
                 return trigger, trigger, dbc.Spinner(color='primary', size='md')
     else:
         return dash.no_update, dash.no_update, trigger
+
+
+@app.long_callback(
+    output=Output('test-acq-div', 'children'),
+    inputs=[Input('test-acq-button', 'n_clicks')],
+    manager=long_callback_manager,
+    running=[
+        (Output('test-acq-button', 'children'), [dbc.Spinner(size='sm'), ' Testing...'], 'Test'),
+    ],
+    prevent_initial_call=True
+)
+def test_acq(n_clicks):
+    if n_clicks:
+        picam2.video_capture('./test.avi', 20, 20000, 40, 2)
+        return trigger
+    else:
+        return dash.no_update
+        
 
 @app.callback(
     output=[
@@ -505,17 +534,22 @@ def update_still_image(n_clicks, cam_init):
         if camera_state.trigger and camera_state.state == 'streaming':
             camera_state.on_off('streaming')
             time.sleep(0.5)
-        elif camera.platform.is_streaming:
-            camera.platform.key = 27 # stop stream by simulating key press
+        elif live_stream.is_streaming:
+            live_stream.stop()
             time.sleep(0.5)
 
-        frame = camera.grab()
+        exposure = camera_settings.settings['exposure']
+        fps = camera_settings.settings['framerate']
+        sensor_mode = camera_settings.settings['sensor_mode']
+
+        frame = picam2.still_capture(exposure, fps, sensor_mode)
 
         existing_images = glob.glob('./snap_images/snap-*.png')
         cv2.imwrite(f'./snap_images/snap-{len(existing_images)+1}.png', frame)
 
         TabState.state = 'still-tab'
         return trigger, renderers.interactiveImage('snap-image', frame), trigger
+
 
 @app.callback(
     output=Output('image-capture-tabs', 'value'),
@@ -539,7 +573,10 @@ def update_well_number(data):
 def get_acq_path(n_clicks):
     if n_clicks:
         root = Tk()
-        folder_selected = tkfilebrowser.askopendirname(parent=root)
+        folder_selected = tkfilebrowser.askopendirname(
+            parent=root,
+            title='Select an acquisition folder',
+            okbuttontext='Open')
         root.destroy()
         return folder_selected
     else:
@@ -613,12 +650,20 @@ def get_acq_path(n_clicks):
 
 @app.callback(
     output=Output('loaded-data-callback', 'children'),
-    inputs=[Input('load-config-button', 'filename')])
-def upload_config(filename):
-    if filename == None:
+    inputs=[Input('load-config-button', 'n_clicks')])
+def upload_config(n_clicks):
+    if n_clicks is None:
         return dash.no_update
-    else:
-        filename = './configs/' + filename
+    else:        
+        root = Tk()
+        filename = tkfilebrowser.askopenfilename(
+            parent=root,
+            initialdir='./configs',
+            title='Select a config file',
+            filetypes=[("Configs", "*.json"), ("All files", "*")],
+            okbuttontext='Open'
+        )
+        root.destroy()
 
         with open(filename, 'r') as fp:
             data = json.load(fp)
@@ -627,6 +672,7 @@ def upload_config(filename):
             loaded_camera_settings.framerate = data['camera_settings']['framerate']
             loaded_camera_settings.width = data['camera_settings']['width']
             loaded_camera_settings.height = data['camera_settings']['height']
+            loaded_camera_settings.sensor_mode = data['camera_settings']['sensor_mode_ind']
 
             coord_data.xs = data['positions']['x_coordinates']
             coord_data.ys = data['positions']['y_coordinates']
@@ -639,7 +685,6 @@ def upload_config(filename):
     output=Output('config-save-callback', 'children'),
     inputs=[Input('save-config-button', 'n_clicks')],
     state=[
-        State('config-name-input', 'value'),
         State('exposure', 'value'),
         State('fps', 'value'),     
         State('resolution-preset', 'value'),
@@ -648,18 +693,29 @@ def upload_config(filename):
         State('each-time-limit', 'value'),
         State('acquire-path-input', 'value'),
     ])
-def save_config(n_clicks, config_name, exposure, fps, resolution, timepoints, interval, length, path):
+def save_config(n_clicks, exposure, fps, resolution, timepoints, interval, length, path):
     if n_clicks is None:
         return dash.no_update
     else:
-        width, height = resolution_presets[resolution]
+        root = Tk()
+        filename = tkfilebrowser.asksaveasfilename(
+            parent=root,
+            initialdir='./configs',
+            title='Save a config file',
+            filetypes=[("Configs", "*.json"), ("All files", "*")],
+            okbuttontext='Save'
+        )
+        root.destroy()
+
+        width, height = sensor_modes[resolution]['size']
 
         featureDict = {
             'camera_settings': {
                 'exposure': exposure * 1000, # Convert back to exposure units on pi
                 'framerate': fps,
                 'width': width,
-                'height': height
+                'height': height,
+                'sensor_mode_ind': resolution
             },
             'positions': {
                 'x_coordinates': coord_data.xs,
@@ -675,7 +731,8 @@ def save_config(n_clicks, config_name, exposure, fps, resolution, timepoints, in
             }
         }
 
-        filename = f'./configs/{config_name}.json'
+        if not filename.endswith('.json'):
+            filename = f'{filename}.json'
 
         with open(filename, 'w') as fp:
             json.dump(featureDict, fp, indent=4)
@@ -683,183 +740,9 @@ def save_config(n_clicks, config_name, exposure, fps, resolution, timepoints, in
 # ============================================================= #
 # ------------------ Acquisitions callbacks ------------------- #
 # ============================================================= #
-
-def to_list(vals):
-    if not isinstance(vals, list):
-        if isinstance(vals, float or int or str):
-            vals = [vals]
-        else:
-            vals = list(vals)
-    return vals
-
-def pack_results(data):
-    t_,c,a,i,tp,e,mft,lft,hft = map(to_list, data)
-    d = dict(TotalTime=t_, AcquisitionTime=c, AncillaryTime=a, 
-             IncompleteFrames=i, MeanFrameTime=mft, MinFrameTime=lft, MaxFrameTime=hft,
-             Timepoint=tp, Embryo=e)
-    df = pd.DataFrame(data=d)   
-    return df
-
-def send_email(email_cls, timepoint, data, paths, checklist):
-    email = emails.Emails()
-    email.login(email_cls.username, email_cls.password)
-
-    # Pause the email system until all videos have finished being captured.
-    while True:
-        out = checklist.get()
-        if out:
-            break
-
-    try:
-        if email.isLoggedIn:
-            outfiles = [] 
-
-            if isinstance(paths, list):
-                for file in paths:
-                    video = cv2.VideoCapture(file)
-                    _, frame = video.read()
-                    new_file = re.sub('.avi', '.png', file)
-                    cv2.imwrite(new_file, frame)
-                    video.release()
-
-                    outfiles.append(new_file)
-            else:
-                video = cv2.VideoCapture(paths)
-                _, frame = video.read()
-                new_file = re.sub('.avi', '.png', paths)
-                cv2.imwrite(new_file, frame)
-                video.release()
-
-                outfiles.append(new_file)
-
-            text = f"""\
-            LabEP update: Timepoint {timepoint}
-
-            No. of embryos imaged: {len(paths)}
-
-            See attached files for still images of embryos at this timepoint."""
-
-            email.send(f'LabEP update: timepoint {timepoint}', text, outfiles)
-
-            for file in outfiles:
-                os.remove(file)
-    finally:
-        email.close()
-
-def convert_to_avi(files, fps, checklist, codec='MJPG', delete_npy=True):
-    # For converting numpy files to avi's for ease of use
-    for file in files:
-        array = np.load(file)
-        h, w, c = array.shape[1:]
-        writer = cv2.VideoWriter(re.sub('.npy', '.avi', file), cv2.VideoWriter_fourcc(*codec), fps, (w,h))
-        for frame in array:
-            writer.write(frame)
-
-        writer.release()
-        if delete_npy:
-            os.remove(file)
-        
-    checklist.put(True)
-
-
-def post_acq_gui(positions, timepoint, files, checklist, terminate_queue):
-    font = cv2.FONT_HERSHEY_SIMPLEX
-    fontScale = 0.5
-    fontColor = (255,255,255)
-    lineType = 1
-
-    # Pause the gui creator until all videos have finished being converted
-    while True:
-        out = checklist.get()
-        
-        if not terminate_queue.empty():
-            terminate = terminate_queue.get()
-            
-            if terminate:
-                print('[INFO]: Not enough time between acquisitions to display GUI.')
-                return
-        if out:
-            break
-
-    position_frames = []
-    for p, f in zip(positions, files):
-        video = cv2.VideoCapture(f)
-        s, frame = video.read()
-        cv2.putText(
-            frame, f'Position: {p}',
-            tuple(map(int, (0.01*frame.shape[1], 0.92*frame.shape[0]))),
-            font, fontScale, fontColor, lineType)
-
-        cv2.putText(
-            frame, f'Timepoint: {timepoint}',
-            tuple(map(int, (0.01*frame.shape[1], 0.96*frame.shape[0]))),
-            font, fontScale, fontColor, lineType)
-
-        position_frames.append(frame)
-        video.release()
-    
-    if not terminate_queue.empty():
-        terminate = terminate_queue.get()
-        
-        if terminate:
-            print('[INFO]: Not enough time between acquisitions to display GUI.')
-            return
-
-    fig, ax = plt.subplots()
-    im = ax.imshow(position_frames[0], cmap='gray')
-    fig.subplots_adjust(bottom=0.25)
-
-    axpos = fig.add_axes([0.25, 0.1, 0.65, 0.03])
-    pos_slider = Slider(
-        ax=axpos,
-        label='Position',
-        valmin=1,
-        valmax=len(position_frames),
-        valinit=1,
-        valstep=1,
-    )
-
-    # The function to be called anytime a slider's value changes
-    def update(val):
-        im.set_array(position_frames[val])
-        fig.canvas.draw_idle()
-
-    pos_slider.on_changed(update)
-
-    plt.show()
-
-    # gui = vuba.FramesGUI(position_frames, title='Position Viewer:')
-
-    # @gui.method
-    # def main(gui):
-    #     frame = gui.frame.copy()
-    #     return frame
-
-    # def close_without_key():
-    #     # Execute first method to launch the gui
-    #     firstfunc = gui.trackbars[[*gui.trackbars][0]]
-    #     func = firstfunc.method
-    #     min = firstfunc.min
-    #     func(min)
-
-    #     while True:
-    #        cv2.pollKey()
-           
-    #        if not terminate_queue.empty():
-    #            terminate = terminate_queue.get()
-               
-    #            if terminate:
-    #                cv2.destroyAllWindows()
-    #                break
-            
-    # gui.run = close_without_key
-    # gui.run()
-
-# Amount of units of moved per second for xy stage
-units_per_sec = 6
-@app.long_callback(
+@app.callback(
     output=[
-        Output('hiddenAcquire', 'children'),
+        Output('acquisition_state', 'children'),
         Output('acquisition-live-stream-popup', 'is_open'),
         Output('acquisition-folder-popup', 'is_open')],
     inputs=[Input('acquire-button', 'n_clicks')],
@@ -874,59 +757,33 @@ units_per_sec = 6
         State('acquire-path-input', 'value'),
         State('xy_coords', 'data'),
         State('acquisition-number', 'value'),
+        State('light-auto-dimming', 'value')
     ],
-    manager=long_callback_manager,
-    running=[
-        (Output('acquire-button', 'children'), [dbc.Spinner(size='sm'), ' Acquiring...'], 'Start acquisition'),
-        (Output('acquire-button', 'disabled'), True, False),
-        (Output('cancel-acquire-button', 'disabled'), False, True),
-        (Output('home-xy-button', 'disabled'), True, False),
-        (Output('test-frame-button', 'disabled'), True, False),
-        (Output('camera-live-stream', 'disabled'), True, False),
-        (Output('update-camera-settings', 'disabled'), True, False),
-        (Output('hardware-brightness', 'disabled'), True, False),
-        (Output('load-config-button', 'disabled'), True, False),
-        # (Output('xy_coords', 'editable'), True, False), # Removed for now because it makes the table uneditable despite arguments being correct.
-    ],
-    cancel=[Input('cancel-acquire-button', 'n_clicks')],
-    progress=[
-        Output("timepoint-pg", "value"), Output("timepoint-pg", "label"), Output("timepoint-pg", "max"), 
-        Output("embryo-pg", "value"), Output("embryo-pg", "label"), Output("embryo-pg", "max"), 
-    ]
 )
-def acquire(set_progress, n_clicks, cam_init, timepoints, length, time, exposure, fps, resolution, user_path, xy_data, acq_num):
+def acquire(n_clicks, cam_init, timepoints, length, time, exposure, fps, resolution, user_path, xy_data, acq_num, light_auto_dim):
     if n_clicks is None:
-        return dash.no_update, False, False
+        return trigger, False, False
     else:
-        acquisition_state.started()
+        if len(os.listdir(user_path)):
+            return trigger, False, True
 
         if camera_state.trigger and camera_state.state == 'streaming':
             print('Streaming currently, will fail...')
-            acquisition_state.finished()
             return trigger, True, False
 
-        experimental_log.clear()
-
-        # Create parent folder
-        DATA_FOLDER = user_path
-        print(DATA_FOLDER)
-
         # Set user-specified acquisition resolution
-        width, height = resolution_presets[resolution]
-        camera.set('width', width)
-        camera.set('height', height)
+        camera_settings.set('sensor_mode', resolution)
+        sensor_mode = sensor_modes[camera_settings.get('sensor_mode')]
 
-        if len(os.listdir(DATA_FOLDER)):
-            return trigger, False, True
-
-        width, height = resolution_presets[resolution]
+        width, height = sensor_mode['size']
 
         featureDict = {
             'camera_settings': {
-                'exposure': exposure * 1000, # Convert back to exposure units on pi
-                'framerate': fps,
+                'exposure': camera_settings.get('exposure'), # Convert back to exposure units on pi
+                'framerate': camera_settings.get('framerate'),
                 'width': width,
-                'height': height
+                'height': height,
+                'sensor_mode_ind': resolution
             },
             'positions': {
                 'x_coordinates': coord_data.xs,
@@ -946,203 +803,89 @@ def acquire(set_progress, n_clicks, cam_init, timepoints, length, time, exposure
         with open(filename, 'w') as fp:
             json.dump(featureDict, fp, indent=4)
 
-        if acq_num == 'Single': 
-            print('Starting acquisition...')          
-            if length == 0:
-                # Acquire footage
-                path = os.path.join(DATA_FOLDER, 'continuous.avi')
-                camera.acquire(path, round(timepoints*time), in_memory=False)
-                ((total, capture, ancillary), (complete, incomplete), ft) = camera.acq_data
-                time_data = [(total, capture, ancillary, incomplete, 
-                                 1, 0, ft.mean(), ft.min(), ft.max()),]
-
-                # Progress bar info
-                set_progress((0, '', 1, 0, '', 1))
-
-            else:  
-
-                # Grab current led value to change to during acquisition and switch off after each timepoint
-                LED_VALUE = leds.current
-                leds.set(0)
-                timelib.sleep(1)
-
-                experimental_log.startup(['A'], timepoints)
-                time_data = []
-                paths = []
-                for t in range(timepoints):
-                    print(f'Acquiring footage for timepoint {t+1}...')
-
-                    # Turn leds on
-                    leds.set(LED_VALUE)
-                    timelib.sleep(1)
-
-                    path = os.path.join(DATA_FOLDER, f'timepoint{t+1}.npy')
-                    paths.append(path)
-
-                    # Acquire footage
-                    t1 = timelib.time()
-                    camera.acquire(path, time, in_memory=True)
-                    timelib.sleep(2) # session pause to not cause a session hang
-                    ((total, capture, ancillary), (complete, incomplete), ft) = camera.acq_data
-                    timepointData = (total, capture, ancillary, incomplete, 
-                                    str(t), 0, ft.mean(), ft.min(), ft.max())
-                    time_data.append(timepointData)
-                    t2 = timelib.time()
-
-                    # Progress bar info
-                    set_progress((t+1, f'{t+1}', timepoints, 0, '', 1))
-                    experimental_log.update('A', t, str(datetime.datetime.fromtimestamp(t2)))
-
-                    converted_checklist = mp.Queue()
-                    convert_proc = mp.Process(target=convert_to_avi, args=([path], fps, converted_checklist))
-                    convert_proc.start()
-
-                    path = re.sub('.npy', '.avi', path) # for emails
-                    # Send progress updates
-                    if email.isLoggedIn:
-                        email_proc = mp.Process(target=send_email, args=(email, t+1, zip(*[timepointData, ]), path, converted_checklist))
-                        email_proc.start()
-
-                    # Turn leds off
-                    leds.set(0)
-                    timelib.sleep(1)
-
-                    acqTime = t2 - t1
-                    print(f'Sleep time: {length*60 - acqTime}')
-
-                    timelib.sleep(length*60 - acqTime)  
-                    
-        elif acq_num == 'Multiple': 
-            if length == 0:
-                return 'Cannot have no acquisition interval when acquiring footage for multiple positions.', False, False
-
-            # Initial setup
-            first = next(iter(xy_data))
-            names = [*first]
-
-            if len(names) < 3:
-                return 'Coordinate positions must have labels to begin acquisition.', False, False
-
-            labels = [d['label'] for d in xy_data]
-
-            # Grab current led value to change to during acquisition and switch off after each timepoint
-            LED_VALUE = leds.current
-            leds.set(0)
-            timelib.sleep(1)
-
-            # Creation of filepaths
-            paths = {}
-            for replicate in labels:
-                paths[replicate] = []
-                replicate_path = os.path.join(DATA_FOLDER, replicate + '/')
-
-                if not os.path.exists(replicate_path):
-                    os.makedirs(replicate_path)
-
-                for t in range(timepoints):
-                    timepoint_path = os.path.join(replicate_path, f'timepoint{t+1}.npy')
-                    paths[replicate].append(timepoint_path)
-
-            experimental_log.startup(labels, timepoints)
-
-            print('Starting acquisition...')
-            time_data = []
-            for t in range(timepoints):
-                print(f'Acquiring footage for timepoint {t+1}...')
-
-                # Turn leds on
-                leds.set(LED_VALUE)
-                timelib.sleep(1)
-
-                # Set to first well position
-                first = next(iter(xy_data))
-                prev_x, prev_y, prev_z = hardware.grabXY()
-                x,y,z = (first['x'], first['y'], first['z'])
-                dist = np.sqrt((x-prev_x)**2 + (y-prev_y)**2 + (z-prev_z)**2)
-                hardware.moveXY(x,y,z)
-                
-#                 if abs(x-prev_x) > 0 and abs(y-prev_y) > 0:
-#                     timelib.sleep(dist/(units_per_sec/1.5))
-#                 else:
-#                     timelib.sleep(dist/units_per_sec)
-
-                t1 = timelib.time()
-                timepointPaths = []
-                timepointData = []
-                for label,pos in zip(labels, xy_data):
-                    # Position move
-                    prev_x, prev_y = (x, y)
-                    x,y,z = (pos['x'], pos['y'], pos['z'])
-                    dist = np.sqrt((x-prev_x)**2 + (y-prev_y)**2 + (z-prev_z)**2)
-                    hardware.moveXY(x,y,z) # Added wait for 'ok'
-
-#                     if abs(x-prev_x) > 0 and abs(y-prev_y) > 0:
-#                         timelib.sleep(dist/(units_per_sec/1.5))
-#                     else:
-#                         timelib.sleep(dist/units_per_sec)
-
-                    # Acquire footage
-                    path = paths[label][t]
-                    timepointPaths.append(path)
-                    camera.acquire(path, time, in_memory=True)
-                    timelib.sleep(0.5) # session pause to not cause a session hang
-                    ((total, capture, ancillary), (complete, incomplete), ft) = camera.acq_data
-                    timepoint_data = (total, capture, ancillary, incomplete, 
-                                    str(t), label, ft.mean(), ft.min(), ft.max())
-                    time_data.append(timepoint_data)
-                    timepointData.append(timepoint_data)
-
-                    # Progress bar info
-                    set_progress((t+1, f'{t+1}', timepoints, labels.index(label)+1, label, len(labels)))
-                    experimental_log.update(label, t, datetime.datetime.fromtimestamp(t1))
-                    
-                converted_checklist = mp.Queue()
-                convert_proc = mp.Process(target=convert_to_avi, args=(timepointPaths, fps, converted_checklist))
-                convert_proc.start()
-
-                timepointPaths = [re.sub('.npy', '.avi', file) for file in timepointPaths] # For emails below
-
-                terminate_queue = mp.Queue()
-                #gui_proc = mp.Process(target=post_acq_gui, args=(labels, t, timepointPaths, converted_checklist, terminate_queue))
-                #gui_proc.start()
-
-                # Send progress updates
-                if email.isLoggedIn:
-                    email_proc = mp.Process(target=send_email, args=(email, t+1, zip(*timepointData), timepointPaths, converted_checklist))
-                    email_proc.start()
-
-                experimental_log.export(os.path.join(DATA_FOLDER, 'time_data.csv'))
-
-                # Turn leds off
-                leds.set(0)
-                timelib.sleep(1)
-
-                t2 = timelib.time()
-                acqTime = t2 - t1
-                print(f'Sleep time: {length*60 - acqTime}')
-
-                timelib.sleep(length*60 - acqTime)
-                terminate_queue.put(True)
-                timelib.sleep(0.5)
-                #gui_proc.terminate()
-                timelib.sleep(0.1)
-
-        print('Completed acquisition.')
-        df = pack_results(zip(*time_data))
-        df.to_csv(os.path.join(DATA_FOLDER, 'capture_data.csv'))
-
-        if email.isLoggedIn:
-            text = f"""\
-            LabEP update: Completed acquisition.
-            """
-
-            email.login(email.username, email.password)
-            email.send(f'LabEP update: Completed acquisition.', text, None)
-            email.close()
-
-        acquisition_state.finished()
+        acquisition.acquire(
+            folder=user_path, positions=acq_num, timepoints=timepoints, interval=length, capture_length=time, # Acquisition parameters
+            exposure=camera_settings.get('exposure'), fps=camera_settings.get('framerate'), sensor_mode=camera_settings.get('sensor_mode'), # Camera settings
+            stage=stage, leds=leds, light_auto_dim=light_auto_dim, # Hardware instances and settings
+            exp_log=experimental_log, # Ancillary instances
+            xyz_coords=coord_data, # XYZ coordinates
+            email=email # Emails
+        ) 
 
         return trigger, False, False
+
+
+@app.callback(
+    output=Output('cancel_state', 'children'),
+    inputs=[Input('cancel-acquire-button', 'n_clicks')],
+)
+def cancel_acquisition(n_clicks):
+    if n_clicks is not None:
+        acquisition.stop()
+    return trigger
+
+@app.callback(
+    output=[
+        Output('acquire-button', 'disabled'),
+        Output('acquire-button', 'children'),
+        Output('cancel-acquire-button', 'disabled'),
+        Output('acquisition_progress_interval', 'disabled'),
+
+        # Disable or enable UI components depending on acquisition state
+        Output('home-xy-button', 'disabled'),
+        Output('test-frame-button', 'disabled'),
+        Output('camera-live-stream', 'disabled'),
+        Output('update-camera-settings', 'disabled'),
+        Output('hardware-brightness', 'disabled'),
+        Output('load-config-button', 'disabled'),
+    ],
+    inputs=[
+        Input('acquisition_state', 'children'),
+        Input('cancel_state', 'children'),
+        Input('acquisition_progress_state', 'children')
+    ],
+)
+def acquisition_state_monitor(acquisition_state, cancel_state, acquisition_progress_state):
+    if not acquisition.acquiring:
+        return [False, 'Start Acquisition', True, True, *[False for i in range(6)]]
+    else:
+        return [True,  [dbc.Spinner(size='sm'), ' Acquiring...'], False, False, *[True for i in range(6)]]
+
+
+@app.callback(
+    output=[
+        Output("timepoint-pg", "value"),
+        Output("timepoint-pg", "label"),
+        Output("timepoint-pg", "max"),
+
+        Output("embryo-pg", "value"),
+        Output("embryo-pg", "label"),
+        Output("embryo-pg", "max"),
+        
+        Output('acquisition_progress_state', 'children'),
+    ],
+    inputs=[Input('acquisition_progress_interval', 'n_intervals')],
+    state=[
+        State('total-time-points', 'value'),
+        State('acquisition-number', 'value')
+    ]
+)
+def acquisition_progress(n_intervals, timepoints, acq_num):
+    labels = coord_data.labels
+    current_pos = experimental_log.current
+    timepoint, position = current_pos['timepoint'], current_pos['replicate']
+
+    if timepoint is None and position is None:
+        return [dash.no_update for i in range(7)]
+
+    timepoint_pg_args = (timepoint+1, f'{timepoint+1}', timepoints)
+    if acq_num == 'Single':
+        embryo_pg_args = (0, '', 1)
+    else:
+        embryo_pg_args = (labels.index(position)+1, position, len(labels))
+
+    return [*timepoint_pg_args, *embryo_pg_args, trigger]
+
 
 # =============================================================================================== #
 # -------------------------------------- XYZ stage callbacks ------------------------------------ #
@@ -1171,8 +914,8 @@ def acquire(set_progress, n_clicks, cam_init, timepoints, length, time, exposure
 )
 def home_xy_stage(n_clicks):
     if n_clicks:
-        hardware.setOrigin()
-        x,y,z = hardware.grabXY()
+        stage.setOrigin()
+        x,y,z = stage.grabXY()
         relative.start(x=x, y=y, z=z)
         return trigger
     else:
@@ -1183,7 +926,7 @@ def home_xy_stage(n_clicks):
     inputs=[Input('xyz-homing-callback', 'children')],
     prevent_initial_call=True)
 def update_relative_xyz(children):
-    x,y,z = hardware.grabXY()
+    x,y,z = stage.grabXY()
     relative.start(x=x, y=y, z=z)
     return trigger
 
@@ -1202,7 +945,7 @@ def left_diag_up_xy(n_clicks, mag):
     if n_clicks:
         if n_clicks > ldu_xy_clicks.n_clicks:
             relative.update(x=-mag, y=-mag)
-            hardware.xyz.write(str.encode(f'G0 X{relative.x}Y{relative.y}F1000\n'))
+            stage.xyz.write(str.encode(f'G0 X{relative.x}Y{relative.y}F1000\n'))
             ldu_xy_clicks.n_clicks += 1
             return trigger
         else:
@@ -1219,7 +962,7 @@ def up_xy(n_clicks, mag):
     if n_clicks:
         if n_clicks > up_xy_clicks.n_clicks:
             relative.update(y=-mag)
-            hardware.xyz.write(str.encode(f'G0 Y{relative.y}F1000\n'))
+            stage.xyz.write(str.encode(f'G0 Y{relative.y}F1000\n'))
             up_xy_clicks.n_clicks += 1
             return trigger
         else:
@@ -1236,7 +979,7 @@ def right_diag_up_xy(n_clicks, mag):
     if n_clicks:
         if n_clicks > rdu_xy_clicks.n_clicks:
             relative.update(x=mag, y=-mag)
-            hardware.xyz.write(str.encode(f'G0 X{relative.x}Y{relative.y}F1000\n'))
+            stage.xyz.write(str.encode(f'G0 X{relative.x}Y{relative.y}F1000\n'))
             rdu_xy_clicks.n_clicks += 1
             return trigger
         else:
@@ -1253,7 +996,7 @@ def left_xy(n_clicks, mag):
     if n_clicks:
         if n_clicks > left_xy_clicks.n_clicks:
             relative.update(x=-mag)
-            hardware.xyz.write(str.encode(f'G0 X{relative.x}F1000\n'))
+            stage.xyz.write(str.encode(f'G0 X{relative.x}F1000\n'))
             left_xy_clicks.n_clicks += 1
             return trigger
         else:
@@ -1270,7 +1013,7 @@ def right_xy(n_clicks, mag):
     if n_clicks:
         if n_clicks > right_xy_clicks.n_clicks:
             relative.update(x=mag)
-            hardware.xyz.write(str.encode(f'G0 X{relative.x}F1000\n'))
+            stage.xyz.write(str.encode(f'G0 X{relative.x}F1000\n'))
             right_xy_clicks.n_clicks += 1
             return trigger
         else:
@@ -1287,7 +1030,7 @@ def left_diag_down_xy(n_clicks, mag):
     if n_clicks:
         if n_clicks > ldd_xy_clicks.n_clicks:
             relative.update(x=-mag, y=mag)
-            hardware.xyz.write(str.encode(f'G0 X{relative.x}Y{relative.y}F1000\n'))
+            stage.xyz.write(str.encode(f'G0 X{relative.x}Y{relative.y}F1000\n'))
             ldd_xy_clicks.n_clicks += 1
             return trigger
         else:
@@ -1304,7 +1047,7 @@ def down_xy(n_clicks, mag):
     if n_clicks:
         if n_clicks > down_xy_clicks.n_clicks:
             relative.update(y=mag)
-            hardware.xyz.write(str.encode(f'G0 Y{relative.y}F1000\n'))
+            stage.xyz.write(str.encode(f'G0 Y{relative.y}F1000\n'))
             down_xy_clicks.n_clicks += 1
             return trigger
         else:
@@ -1321,7 +1064,7 @@ def right_diag_down_xy(n_clicks, mag):
     if n_clicks:
         if n_clicks > rdd_xy_clicks.n_clicks:
             relative.update(x=mag, y=mag)
-            hardware.xyz.write(str.encode(f'G0 X{relative.x}Y{relative.y}F1000\n'))
+            stage.xyz.write(str.encode(f'G0 X{relative.x}Y{relative.y}F1000\n'))
             rdd_xy_clicks.n_clicks += 1
             return trigger
         else:
@@ -1339,7 +1082,7 @@ def up_z(n_clicks, mag):
     if n_clicks:
         if n_clicks > up_z_clicks.n_clicks:
             relative.update(z=mag)
-            hardware.xyz.write(str.encode(f'G0 Z{relative.z}F1000\n'))
+            stage.xyz.write(str.encode(f'G0 Z{relative.z}F1000\n'))
             up_z_clicks.n_clicks += 1
             return trigger
         else:
@@ -1356,7 +1099,7 @@ def down_z(n_clicks, mag):
     if n_clicks:
         if n_clicks > down_z_clicks.n_clicks:
             relative.update(z=-mag)
-            hardware.xyz.write(str.encode(f'G0 Z{relative.z}F1000\n'))
+            stage.xyz.write(str.encode(f'G0 Z{relative.z}F1000\n'))
             down_z_clicks.n_clicks += 1
             return trigger
         else:
@@ -1372,7 +1115,7 @@ def down_z(n_clicks, mag):
 )
 def grab_xy(n_clicks, data):
     if n_clicks:
-        coords = hardware.grabXY()
+        coords = stage.grabXY()
 
         if coords:
             x,y,z = coords
@@ -1385,19 +1128,21 @@ def grab_xy(n_clicks, data):
                 row_id = 0
 
             if x in coord_data.xs and y in coord_data.ys and z in coord_data.zs:
-                return dash.no_update
+                return dbc.Alert('Position already exists in table below.', color='danger', dismissable=True)
             else:
                 label=f'Pos{row_id}'
                 coord_data.xs.append(x)
                 coord_data.ys.append(y)
                 coord_data.zs.append(z)
                 coord_data.labels.append(label)
+                
+                coord_data.set_current(x,y,z,label)
 
                 return trigger
         else:
-            return dash.no_update
+            trigger
     else:
-        return dash.no_update
+        return trigger
 
 
 class ReplaceNClicks:
@@ -1413,7 +1158,7 @@ class ReplaceNClicks:
 def replace_xy_in_list(n_clicks, selected_rows, data):
     if n_clicks:
         if n_clicks > ReplaceNClicks.count:
-            coords = hardware.grabXY()
+            coords = stage.grabXY()
 
             if coords:
                 x,y,z = coords
@@ -1462,7 +1207,7 @@ def enable_generate_xy(xy, acq_running):
         if xy is not None:
             a1 = False
             for i,pos in enumerate(xy):
-                if 'A1' in pos['label']:
+                if 'A1' in pos['label'] or 'a1' in pos['label']:
                     a1 = True
 
             if a1:
@@ -1490,9 +1235,9 @@ def generate_xy(n_clicks, data, size):
 
         if a1:
             xy1 = [
-                data[a1_index]['x'], 
-                data[a1_index]['y'], 
-                data[a1_index]['z'],
+                float(data[a1_index]['x']), 
+                float(data[a1_index]['y']), 
+                float(data[a1_index]['z']),
                 data[a1_index]['label']
             ]
 
@@ -1632,7 +1377,7 @@ def move_by_graph(switch, selectedData):
             else:
                 relative.start(x=x, y=y, z=z)
                 coord_data.set_current(x,y,z,label)
-                hardware.moveXY(x,y,z)
+                stage.moveXY(x,y,z)
                 
                 return trigger
         else:
@@ -1646,8 +1391,10 @@ import sys
 def teardown():
     """Teardown helper for shutting down various class instances."""
     camera.close()
-    hardware.close()
-    leds.close()
+    if stage:
+        stage.close()
+    if leds:
+        leds.close()
 
 @app.callback(
     output=Output('close-app-div', 'children'),
@@ -1674,7 +1421,7 @@ if __name__ == '__main__':
             import os
 
             def open_browser():
-                os.system('chromium-browser --kiosk http://127.0.0.1:8050/')
+                os.system('chromium-browser http://127.0.0.1:8050/')
 
             Timer(2, open_browser).start()
             app.run_server(debug=False)

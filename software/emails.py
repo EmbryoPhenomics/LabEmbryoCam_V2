@@ -14,52 +14,6 @@ from email.mime.base import MIMEBase
 from email.mime.image import MIMEImage
 from email.mime.text import MIMEText
 
-# try:
-#     with open('../app_config.json', 'r') as conf:
-#         app_conf = json.load(conf)
-#         red_fact = app_conf['reduction_factor']
-#         cores = app_conf['compress_cores']
-# except FileNotFoundError:
-#     with open('./app_config.json', 'r') as conf:
-#         app_conf = json.load(conf)
-#         red_fact = app_conf['reduction_factor']
-#         cores = app_conf['compress_cores']
-# except:
-#     raise
-
-# # Declared here so it's not constantly created whenever a writer is made below
-# fourcc = cv2.VideoWriter_fourcc(*'MPEG')
-# def compress_video(file):
-#     video = cv2.VideoCapture(file)
-
-#     fps = int(video.get(cv2.CAP_PROP_FPS))
-#     width = int(video.get(cv2.CAP_PROP_FRAME_WIDTH)*red_fact)
-#     height = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT)*red_fact)
-#     outpath = re.sub('.avi', '_mp.avi', file)
-
-#     writer = cv2.VideoWriter(outpath, fourcc, fps, (width, height))
-
-#     while video.isOpened():
-#         success, frame = video.read()
-#         if success == False:
-#             break
-
-#         frame = cv2.resize(frame, (width, height))            
-#         writer.write(frame)
-
-#     video.release()
-#     writer.release()
-
-#     return outpath
-
-# def compress_video_par(files):
-#     print('LabEP: Compressing video for sending over email...')
-#     pool = mp.Pool(processes=cores)
-#     out_files = list(tqdm(pool.imap(compress_video, files), total=len(files)))
-#     pool.close()
-
-#     return out_files
-
 class Emails:
     def __init__(self):
         self.server = None
@@ -124,37 +78,3 @@ class Emails:
     def close(self):
         if self.isLoggedIn:
             self.server.quit()
-
-# # Test
-# import time
-# import os
-# import vuba
-
-# files = glob.glob('/home/z/github/heartcv/validate/video/ciona/*.avi')
-# t1 = time.time()
-
-# file = files[0]
-
-# video = vuba.Video(file)
-# img = video.read(0, grayscale=False)
-# cv2.imwrite(re.sub('.avi', '.png', file), img)
-# video.close()
-
-# file = re.sub('.avi', '.png', file)
-
-# text = """\
-# LabEP update: Timepoint 1:
-
-# Timepoint: 1
-# No. of embryos: 60
-# No. of images acquired: 36000
-# Next acquisition in: 1 hr"""
-
-# emails = Emails()
-# emails.login('ziadibbini@gmail.com', 'htrsrsuvhgcidvzl')
-# emails.send('Test', text, file)
-# os.remove(file)
-# emails.close()
-
-# t2 = time.time()
-# print(t2 - t1)
