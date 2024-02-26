@@ -18,7 +18,7 @@ import re
 import math
 import vuba
 from tkinter import *
-from PIL import ImageTk
+from PIL import ImageTk, Image
 
 from picamera2.encoders import JpegEncoder
 from picamera2.outputs import FileOutput, FfmpegOutput
@@ -179,25 +179,6 @@ def video_config(sensor_mode, exposure, fps):
 
 
 def video_capture(path, duration, exposure, fps, sensor_mode=0):
-    def encode_func(self, request, name):
-        """Performs encoding 
-
-        ***This has been edited to flip the arrays for use with the LEC***
-
-        :param request: Request
-        :type request: request
-        :param name: Name
-        :type name: str
-        :return: Jpeg image
-        :rtype: bytes
-        """
-        if self.colour_space is None:
-            self.colour_space = self.FORMAT_TABLE[request.config[name]["format"]]
-        array = request.make_array(name)
-        array = np.flip(array, axis=1)
-        return simplejpeg.encode_jpeg(array, quality=self.q, colorspace=self.colour_space,
-                                      colorsubsampling=self.colour_subsampling)
-
     if not path.endswith('.mkv'):
         raise ValueError('MKV file format only currently supported.')
 
@@ -209,7 +190,6 @@ def video_capture(path, duration, exposure, fps, sensor_mode=0):
     camera.configure(config)
 
     mjpeg_encoder = JpegEncoder(q=80)
-    mjpeg_encoder.encode_func = encode_func
     mjpeg_encoder.framerate = fps
     mjpeg_encoder.size = config["main"]["size"]
     mjpeg_encoder.format = config["main"]["format"]
@@ -231,8 +211,9 @@ def video_capture(path, duration, exposure, fps, sensor_mode=0):
         benchmark.record_complete()
         
         if counter % (fps // 5) == 0:
-            img = request.make_image("lores")
+            img = request.make_array("lores")
             img = np.flip(img, axis=1)
+            img = Image.fromarray(img) 
             im_viewer.show_frame(img)
 
         request.release()
@@ -294,10 +275,11 @@ class LiveStream:
         self.benchmark.record_start()
         while not self.shutdown:
             request = camera.capture_request()      
-            img = request.make_image("lores")
+            img = request.make_array("lores") 
             request.release()
 
             img = np.flip(img, axis=1)
+            img = Image.fromarray(img)
 
             im_viewer.show_frame(img)
 
