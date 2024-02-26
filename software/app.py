@@ -298,7 +298,7 @@ class RelativeXYZ:
 
         # Limits
         self.x1, self.x2 = (22, 210)
-        self.y1, self.y2 = (0, 80)
+        self.y1, self.y2 = (0, 90)
         self.z1, self.z2 = (0, 20)
 
     def start(self, x, y, z):
@@ -915,6 +915,7 @@ def acquisition_progress(n_intervals, timepoints, acq_num):
 def home_xy_stage(n_clicks):
     if n_clicks:
         stage.setOrigin()
+        time.sleep(2)
         x,y,z = stage.grabXY()
         relative.start(x=x, y=y, z=z)
         return trigger
