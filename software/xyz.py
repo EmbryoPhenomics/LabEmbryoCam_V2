@@ -10,18 +10,6 @@ import re
 import numpy as np
 import ujson
 
-# Soft limits
-#x1 = -2
-#y1 = -2
-#x2 = -91
-#y2 = -34
-x1 = 22
-y1 = 0
-z1 = 0
-x2 = 210 # -200 Minitronics
-y2 = 80 # - 75 Minitronics
-z2 = 10 # -45 Minitronics
-
 def which(iterable, obj):
     are = []
     for i,n in enumerate(iterable):
@@ -126,7 +114,8 @@ class StageHardware:
     def __init__(self, xyz_port, joystick_port):
         self.xyz = xyz_port
         self.joystick = joystick_port
-
+        self.fspeed = 2.5 # mm s-1
+        
         self.joystickProc = None
         self.initialiseXYZ()
 
@@ -165,9 +154,15 @@ class StageHardware:
                 continue
             else:
                 break
-            
-        time.sleep(5)
-            
+                
+    def wait_distance(self, prev, next_): # Must be in mm
+        x1,y1,z1 = prev
+        x2,y2,z2 = next_
+
+        dist = np.sqrt((x2-x1)**2 + (y2-y1)**2 + (z2-z1)**2)
+        wait = dist / self.fspeed
+        time.sleep(wait)
+
     def check_status(self):
         self.xyz.write(str.encode('M408 S0'+ '\n'))
         bts = self.xyz.inWaiting()
@@ -190,7 +185,9 @@ class StageHardware:
         
         self.xyz.write(str.encode(f'G0 X{x}Y{y}Z{z}F1000\n'))       
         print('Sending: ' + str(f'G0 X{x}Y{y}Z{z}F1000\n'))
+        self.wait_distance(self.grabXY(), (x,y,z))
         self.wait_until()
+        time.sleep(1)
 
     def moveXY_from_relative_coords(self, x, y, z):
         '''
