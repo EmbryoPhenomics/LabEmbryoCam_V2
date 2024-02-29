@@ -19,9 +19,12 @@ import math
 import vuba
 from tkinter import *
 from PIL import ImageTk, Image
+import subprocess
+import signal
+import prctl
 
 from picamera2.encoders import JpegEncoder
-from picamera2.outputs import FileOutput, FfmpegOutput
+from ffmpegoutput import FfmpegOutput
 import simplejpeg
 
 from camera_benchmark import CaptureBenchmark
@@ -177,6 +180,26 @@ def video_config(sensor_mode, exposure, fps):
             'ColourGains': (0,0)
         })    
 
+# Custom Encoder functions for picamera2 -------------------------------
+# Performs array flipping to match live view of camera
+def encode_func(self, request, name):
+    """Performs encoding
+
+    :param request: Request
+    :type request: request
+    :param name: Name
+    :type name: str
+    :return: Jpeg image
+    :rtype: bytes
+    """
+    if self.colour_space is None:
+        self.colour_space = self.FORMAT_TABLE[request.config[name]["format"]]
+    array = request.make_array(name)
+    array = np.ascontiguousarray(np.flip(array, axis=1))
+    return simplejpeg.encode_jpeg(array, quality=self.q, colorspace=self.colour_space,
+                                  colorsubsampling=self.colour_subsampling)
+
+# ------------------------------------------------------------
 
 def video_capture(path, duration, exposure, fps, sensor_mode=0):
     if not path.endswith('.mkv'):
@@ -188,8 +211,9 @@ def video_capture(path, duration, exposure, fps, sensor_mode=0):
     mode = camera.sensor_modes[sensor_mode]
     config = camera.create_video_configuration(**video_config(mode, exposure, fps))
     camera.configure(config)
-
+    
     mjpeg_encoder = JpegEncoder(q=80)
+    mjpeg_encoder.encode_func = encode_func.__get__(mjpeg_encoder, JpegEncoder)
     mjpeg_encoder.framerate = fps
     mjpeg_encoder.size = config["main"]["size"]
     mjpeg_encoder.format = config["main"]["format"]
