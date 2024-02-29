@@ -500,23 +500,6 @@ def start_stop_live_view(n_clicks, cam_init, mode):
         return dash.no_update, dash.no_update, trigger
 
 
-@app.long_callback(
-    output=Output('test-acq-div', 'children'),
-    inputs=[Input('test-acq-button', 'n_clicks')],
-    manager=long_callback_manager,
-    running=[
-        (Output('test-acq-button', 'children'), [dbc.Spinner(size='sm'), ' Testing...'], 'Test'),
-    ],
-    prevent_initial_call=True
-)
-def test_acq(n_clicks):
-    if n_clicks:
-        picam2.video_capture('./test.avi', 20, 20000, 40, 2)
-        return trigger
-    else:
-        return dash.no_update
-        
-
 @app.callback(
     output=[
         Output('camera-state-snapshot', 'children'),
@@ -897,6 +880,7 @@ def acquisition_progress(n_intervals, timepoints, acq_num):
     manager=long_callback_manager,
     running=[
         (Output('home-xy-button', 'children'), [dbc.Spinner(size='sm'), ' Homing...'], 'Set Origin'),
+        (Output('home-xy-button', 'disabled'), True, False),
         (Output('left-diag-xy-up', 'disabled'), True, False),
         (Output('up-xy', 'disabled'), True, False),
         (Output('right-diag-xy-up', 'disabled'), True, False),
