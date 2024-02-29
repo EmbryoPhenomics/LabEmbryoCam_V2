@@ -488,12 +488,8 @@ def app_layout(sensor_modes):
                                                         dbc.Button('Snap', id='test-frame-button', size='lg')
                                                     ], style={'width': '30%', 'display': 'table-cell'}),
                                                     html.Div(children=[
-                                                        dbc.Button('Test', id='test-acq-button', size='lg'),
-                                                        html.Div(id='test-acq-div'),
-                                                    ], style={'width': '20%', 'display': 'table-cell'}),
-                                                    html.Div(children=[
                                                         dbc.Button('Start/Stop Stream', id='camera-live-stream', size='lg'),
-                                                    ], style={'width': '40%', 'display': 'table-cell'}),
+                                                    ], style={'width': '60%', 'display': 'table-cell'}),
                                                     html.Div(children=[
                                                         html.Div(id='streaming-spinner')
                                                     ], style={'width': '`10%', 'display': 'table-cell'}),
