@@ -131,13 +131,6 @@ class LiveOptFlow:
 
 
 # Updated API for Picamera2 ------------------------------------------------------------ #
-def get_sensor_modes():
-    camera = picamera2.Picamera2()
-    modes = camera.sensor_modes
-    camera.close()
-    return modes
-
-
 def disable_event():
     pass
     
@@ -157,28 +150,6 @@ class TkImageViewer:
 
     def close(self):
         self.root.destroy()
-
-
-def video_config(sensor_mode, exposure, fps):
-    w,h = sensor_mode['size']
-
-    # Correct display aspect ratio
-    lores_size = (640,480)
-    if (h / w) <= 0.7:
-        lores_size = (640,320)
-        
-    return dict(    
-        sensor={"output_size": sensor_mode['size'], "bit_depth": sensor_mode['bit_depth']},
-        main={"size": sensor_mode['size'], "format": 'RGB888'},
-        lores={"size": lores_size, "format": 'RGB888'},
-        controls={
-            'ExposureTime': exposure,
-            'FrameRate': fps,
-            'FrameDurationLimits': (exposure, 1000000),
-            'AwbEnable': 0,
-            'AeEnable': 0,
-            'ColourGains': (0,0)
-        })    
 
 # Custom Encoder functions for picamera2 -------------------------------
 # Performs array flipping to match live view of camera
@@ -200,105 +171,142 @@ def encode_func(self, request, name):
                                   colorsubsampling=self.colour_subsampling)
 
 # ------------------------------------------------------------
+def video_config(sensor_mode, exposure, fps, analogue_gain):
+    w,h = sensor_mode['size']
 
-def video_capture(path, duration, exposure, fps, sensor_mode=0):
-    if not path.endswith('.mkv'):
-        raise ValueError('MKV file format only currently supported.')
-
-    benchmark = CaptureBenchmark()
-
-    camera = picamera2.Picamera2()
-    mode = camera.sensor_modes[sensor_mode]
-    config = camera.create_video_configuration(**video_config(mode, exposure, fps))
-    camera.configure(config)
+    # Correct display aspect ratio
+    lores_size = (640,480)
+    if (h / w) <= 0.7:
+        lores_size = (640,320)
     
-    mjpeg_encoder = JpegEncoder(q=80)
-    mjpeg_encoder.encode_func = encode_func.__get__(mjpeg_encoder, JpegEncoder)
-    mjpeg_encoder.framerate = fps
-    mjpeg_encoder.size = config["main"]["size"]
-    mjpeg_encoder.format = config["main"]["format"]
-    mjpeg_encoder.output = FfmpegOutput(path)
-    mjpeg_encoder.start()        
-
-    im_viewer = TkImageViewer()
-
-    camera.start()
-    start = timelib.time()
-    benchmark.record_start()
-    pg = tqdm(total=duration*fps)
-    counter = 0
-    while timelib.time() - start < duration:
-        request = camera.capture_request()
-        mjpeg_encoder.encode("main", request)
-
-        benchmark.record_frame_time()
-        benchmark.record_complete()
+    exposure_fps = 1 / (exposure / 1e6)
+    if exposure_fps > fps:
+        fdl = (1 / fps) * 1e6
+    else:
+        fdl = exposure
+    
+    fdl = round(fdl)
         
-        if counter % (fps // 5) == 0:
-            img = request.make_array("lores")
-            img = np.flip(img, axis=1)
-            img = Image.fromarray(img) 
-            im_viewer.show_frame(img)
-
-        request.release()
-        pg.update(1)
-        counter += 1
-
-    benchmark.record_end()
-    mjpeg_encoder.stop()
-    camera.stop()
-    camera.close()
-    im_viewer.close()    
-
-    benchmark.print_log() 
-    return benchmark.compute_timings()
+    return dict(    
+        sensor={"output_size": sensor_mode['size'], "bit_depth": sensor_mode['bit_depth']},
+        main={"size": sensor_mode['size'], "format": 'RGB888'},
+        lores={"size": lores_size, "format": 'RGB888'},
+        controls={
+            'ExposureTime': exposure,
+            #'FrameRate': fps,
+            'FrameDurationLimits': (fdl, fdl),
+            'AwbEnable': 0,
+            'AeEnable': 0,
+            'AnalogueGain': analogue_gain,
+            'ColourGains': (1, 1),
+            'Saturation': 0,
+        })    
 
 
-def still_capture(exposure, fps, sensor_mode=0):
-    camera = picamera2.Picamera2()
-    mode = camera.sensor_modes[sensor_mode]
-    config = camera.create_video_configuration(**video_config(mode, exposure, fps))
-    camera.configure(config)
-
-    # Currently capture according video config, but will change to dedicated still config
-    camera.start()
-    start = timelib.time()
-    while timelib.time() - start < 1: # Capture for 1 second
-        request = camera.capture_request()
-        img = request.make_array("main")
-        request.release()
-
-    img = np.flip(img, axis=1)
-    
-    camera.stop()   
-    camera.close() 
-    return img
-
-
-class LiveStream:
+class Camera:
     def __init__(self):
+        self.camera = picamera2.Picamera2()
+            
+    def get_sensor_modes(self):
+        modes = self.camera.sensor_modes
+        return modes
+
+    def video_capture(self, path, duration, exposure, fps, analogue_gain, sensor_mode=0):
+        if not path.endswith('.mkv'):
+            raise ValueError('MKV file format only currently supported.')
+
+        benchmark = CaptureBenchmark()
+
+        mode = self.camera.sensor_modes[sensor_mode]
+        config = self.camera.create_video_configuration(**video_config(mode, exposure, fps, analogue_gain))
+        self.camera.configure(config)
+        
+        mjpeg_encoder = JpegEncoder(q=80)
+        mjpeg_encoder.encode_func = encode_func.__get__(mjpeg_encoder, JpegEncoder)
+        mjpeg_encoder.framerate = fps
+        mjpeg_encoder.size = config["main"]["size"]
+        mjpeg_encoder.format = config["main"]["format"]
+        mjpeg_encoder.output = FfmpegOutput(path)
+        mjpeg_encoder.start()        
+
+        im_viewer = TkImageViewer()
+
+        self.camera.start()
+        start = timelib.time()
+        benchmark.record_start()
+        pg = tqdm(total=duration*fps)
+        counter = 0
+        while timelib.time() - start < duration:
+            request = self.camera.capture_request()
+            mjpeg_encoder.encode("main", request)
+
+            benchmark.record_frame_time()
+            benchmark.record_complete()
+            
+            if counter % (fps // 5) == 0:
+                img = request.make_array("lores")
+                img = np.flip(img, axis=1)
+                img = Image.fromarray(img) 
+                im_viewer.show_frame(img)
+
+            request.release()
+            pg.update(1)
+            counter += 1
+
+        benchmark.record_end()
+        mjpeg_encoder.stop()
+        self.camera.stop()
+        im_viewer.close()    
+
+        benchmark.print_log() 
+        return benchmark.compute_timings()
+
+
+    def still_capture(self, exposure, fps, analogue_gain, sensor_mode=0):
+        mode = self.camera.sensor_modes[sensor_mode]
+        config = self.camera.create_video_configuration(**video_config(mode, exposure, fps, analogue_gain))
+        self.camera.configure(config)
+       
+        # Currently capture according video config, but will change to dedicated still config
+        self.camera.start()
+        start = timelib.time()
+        while timelib.time() - start < 1: # Capture for 1 second
+            request = self.camera.capture_request()
+            img = request.make_array("main")
+            request.release()
+
+        img = np.flip(img, axis=1)
+        
+        self.camera.stop()   
+        return img
+
+    def close(self):
+        self.camera.close()
+        
+        
+class LiveStream:
+    def __init__(self, camera):
+        self.camera = camera
         self.shutdown = False
         self.is_streaming = False
         self.benchmark = CaptureBenchmark()
 
-    def _start(self, exposure, fps, sensor_mode=0):
+    def _start(self, exposure, fps, analogue_gain, sensor_mode=0):
         self.benchmark.clear()
 
-        camera = picamera2.Picamera2()
-        mode = camera.sensor_modes[sensor_mode]
-        config = camera.create_video_configuration(**video_config(mode, exposure, fps))
-        camera.configure(config)
-        print(camera.camera_configuration())
+        mode = self.camera.sensor_modes[sensor_mode]
+        config = self.camera.create_video_configuration(**video_config(mode, exposure, fps, analogue_gain))
+        self.camera.configure(config)
         
         self.shutdown = False
         self.is_streaming = True
 
         im_viewer = TkImageViewer()
 
-        camera.start()
+        self.camera.start()
         self.benchmark.record_start()
         while not self.shutdown:
-            request = camera.capture_request()      
+            request = self.camera.capture_request()      
             img = request.make_array("lores") 
             request.release()
 
@@ -311,33 +319,31 @@ class LiveStream:
             self.benchmark.record_complete()
 
         self.benchmark.record_end()
-        camera.stop()
-        camera.close()
+        self.camera.stop()
         im_viewer.close()    
 
         self.benchmark.print_log()
 
-    def start(self, exposure, fps, sensor_mode=0):
-        thread = threading.Thread(target=self._start, args=(exposure, fps, sensor_mode))
+    def start(self, exposure, fps, analogue_gain, sensor_mode=0):
+        thread = threading.Thread(target=self._start, args=(exposure, fps, analogue_gain, sensor_mode))
         thread.start()
 
     def stop(self):
         self.shutdown = True
         self.is_streaming = False
-
-
+        
+        
 def frame_to_bytes(frame):
     ret, jpeg = cv2.imencode('.jpg', frame)
     return jpeg.tobytes() 
 
 
 class VideoGenerator:
-    def __init__(self, exposure, fps, sensor_mode=0):
-        self.camera = picamera2.Picamera2()
+    def __init__(self, camera, exposure, fps, analogue_gain, sensor_mode=0):
+        self.camera = camera
         mode = self.camera.sensor_modes[sensor_mode]
-        config = self.camera.create_video_configuration(**video_config(mode, exposure, fps))
+        config = self.camera.create_video_configuration(**video_config(mode, exposure, fps, analogue_gain))
         self.camera.configure(config)
-        print(self.camera.camera_configuration())
         self.benchmark = CaptureBenchmark()
 
     def __enter__(self):
@@ -360,7 +366,6 @@ class VideoGenerator:
     def __exit__(self, exc_type, exc_value, exc_tb):
         self.benchmark.record_end()
         self.camera.stop()
-        self.camera.close()
         self.benchmark.print_log()
 
 
@@ -370,7 +375,8 @@ class CameraSettings:
         self.settings = {
             'framerate': 30,
             'exposure': 20000, # in u-ms, *1000 for ms
-            'sensor_mode': 0
+            'sensor_mode': 0,
+            'analogue_gain': 1
         }
 
     def get(self, name):
@@ -379,3 +385,35 @@ class CameraSettings:
 
     def set(self, name, value):
         self.settings[name] = value
+        
+        
+if __name__ == '__main__':
+
+    picam2 = Camera()
+    
+    for i in range(1000):
+        picam2.still_capture(exposure=20000, fps=30, analogue_gain=1, sensor_mode=0)
+
+    picam2.close()
+       
+    
+    '''
+    camera = picamera2.Picamera2()    
+    for i in range(500000):
+        
+        mode = camera.sensor_modes[0]
+        config = camera.create_video_configuration(**video_config(mode, 20000, 20))
+        camera.configure(config)
+
+        camera.start()
+
+        timelib.sleep(0.001)
+        
+        camera.stop()   
+    
+    camera.close() 
+    '''
+        
+        
+        
+        #break
