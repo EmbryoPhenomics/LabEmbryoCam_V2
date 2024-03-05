@@ -18,7 +18,7 @@ def which(iterable, obj):
     return are
 
 # Identify relevant well to well distances for 24, 48, 96 and 384 well plates and corresponding x_wells
-well_dists = {6:18, 8:13, 12:9, 24:3.2}
+well_dists = {6:19, 8:13.5, 12:9, 24:4.4}
 yLabs = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P'] 
 def gen_xy_old(xy1, xWells, yWells):
     '''
@@ -210,29 +210,36 @@ class StageHardware:
         
     def grabXY(self):
         '''Retrieves the current xyz stage position.'''
-        
-        # Minitronics board
+
+        # First read to clear buffer
         self.xyz.write(str.encode('M114' + '\n'))
         bts = self.xyz.inWaiting()
-        out = self.xyz.read(bts)
-        sleep(0.5)
+        out = self.xyz.read(bts)                  
 
-        self.xyz.write(str.encode('M114' + '\n'))
-        bts = self.xyz.inWaiting()
-        out = self.xyz.read(bts)
-        sleep(0.5)
+        coords = None
+        for i in range(10):
+            # Second read to clear buffer
+            self.xyz.write(str.encode('M114' + '\n'))
+            bts = self.xyz.inWaiting()
+            out = self.xyz.read(bts)
 
-        remove = '\XYZE:"\'' + string.ascii_lowercase
-        table = str.maketrans('','',remove)
-        out = str(out).translate(table)
-        print(out)
-        try:
-            out = out.split(' ')[0:3] # remove the E value.
-            print('XYZ: ', str(out))
-            x,y,z = map(float, out)
-            coords = x,y,z
-        except:
-            raise
+            remove = '\XYZE:"\'' + string.ascii_lowercase
+            table = str.maketrans('','',remove)
+            out = str(out).translate(table)
+            
+            try:
+                out = out.split(' ')[0:3] # remove the E value.
+                x,y,z = map(float, out)
+                coords = x,y,z
+                print('XYZ: ', coords)
+                break
+            except:
+                pass
+            
+            time.sleep(0.2)
+
+        if not coords:
+            raise SystemError('Unable to retrieve position from Duet3D board.')
         
         return coords
     
@@ -385,17 +392,18 @@ class StageHardware:
             self.joystick.close()
 
 if __name__ == '__main__':
-    import matplotlib.pyplot as plt
-    a1 = (66, 19, 0)
-    for p in gen_xy_old(a1, 12, 8):
-        x,y,z,l = p
-        plt.plot(x,y, 'o')
-    plt.show()
 
-
-    # stage = StageHardware(Serial('/dev/ttyACM0', 115200), Serial('/dev/ttyACM1', 115200))
-    # stage.setOrigin()
-       
+    stage = StageHardware(Serial('/dev/ttyACM1', 115200), None)
+    stage.setOrigin()
+    
+    sleep(2)
+    
+    for i in range(100):
+        for x in range(1, 150, 10):
+            for y in range(1, 80, 10):
+                stage.moveXY(210-x,0+y,0)
+ 
+        
     # stage.moveXY_from_relative_coords(-30, 30, 0)
 #     stage.moveXY_from_relative_coords(-15, 15, 0)
 #     stage.moveXY_from_relative_coords(-15, 0, 0)
