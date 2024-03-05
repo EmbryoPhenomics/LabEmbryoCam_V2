@@ -405,6 +405,7 @@ def app_layout(sensor_modes):
                                                 children=[
                                                     dcc.Tab(label='LED', value='led-tab', style=tab_style, selected_style=tab_selected_style_main, children=[
                                                         html.Br(),
+                                                        html.Label('Brightness of the LED ring.'),
                                                         dcc.Slider(
                                                             id='hardware-brightness',
                                                             min=0,
@@ -416,6 +417,7 @@ def app_layout(sensor_modes):
                                                     ]),
                                                     dcc.Tab(label='Exposure', value='exposure-tab', style=tab_style, selected_style=tab_selected_style_main, children=[
                                                         html.Br(),
+                                                        html.Label('Shutter speed for the camera sensor to use, in milliseconds.'),
                                                         dcc.Slider(
                                                             id='exposure',
                                                             min=0,
@@ -425,8 +427,21 @@ def app_layout(sensor_modes):
                                                             persistence=True),
                                                         html.Div(id='exposure-change'),
                                                     ]),
-                                                    dcc.Tab(label='Frame-rate', value='fps-tab', style=tab_style, selected_style=tab_selected_style_main, children=[
+                                                    dcc.Tab(label='Gain', value='gain-tab', style=tab_style, selected_style=tab_selected_style_main, children=[
                                                         html.Br(),
+                                                        html.Label('Analogue gain applied by the camera sensor.'),
+                                                        dcc.Slider(
+                                                            id='analogue_gain',
+                                                            min=0,
+                                                            max=20,
+                                                            value=1,
+                                                            tooltip={'always_visible': True, 'placement': 'bottom'},
+                                                            persistence=True),
+                                                        html.Div(id='analogue_gain-change'),
+                                                    ]),                    
+                                                    dcc.Tab(label='FPS', value='fps-tab', style=tab_style, selected_style=tab_selected_style_main, children=[
+                                                        html.Br(),
+                                                        html.Label('Frames per second the camera sensor delivers.'),
                                                         dcc.Slider(
                                                             id='fps',
                                                             min=0,
@@ -437,6 +452,8 @@ def app_layout(sensor_modes):
                                                         html.Div(id='fps-change'),
                                                     ])
                                                 ]),
+                                                
+                                                html.Br(),
 
                                                 html.Div(children=[
                                                     html.Div(children=[
