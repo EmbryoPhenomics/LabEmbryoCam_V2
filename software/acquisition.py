@@ -4,7 +4,6 @@ import threading
 import pandas as pd
 import os
 import datetime
-import camera_backend_picamera2 as picam2
 import emails
 import multiprocessing as mp
 import cv2
@@ -115,14 +114,13 @@ class Acquisition:
             Email class instance derived from 'email' module.
 
         '''
-        self.acquiring = True
         thread = threading.Thread(target=self._acquire, args=args, kwargs=kwargs)
         thread.start()
 
 
     def _acquire(self,
         folder, positions, timepoints, interval, capture_length, # Acquisition parameters
-        exposure, fps, sensor_mode, # Camera settings
+        camera, exposure, fps, sensor_mode, analogue_gain, # Camera settings
         stage, leds, light_auto_dim, # Hardware instances and settings
         exp_log, # Ancillary instances
         xyz_coords, # XYZ coordinates
@@ -130,9 +128,12 @@ class Acquisition:
 
         self.shutdown = threading.Event()
         exp_log.clear()
+        
+        self.acquiring = True
 
         # Timelapse recording for a single position
         if positions == 'Single':
+      
             # Grab current led value to change to during acquisition and switch off after each timepoint
             LED_VALUE = leds.current
             if not light_auto_dim:
@@ -147,11 +148,12 @@ class Acquisition:
             paths = []
             for t in range(timepoints):
                 if self.shutdown.is_set():
+                    self.acquiring = False
                     print('Exiting acquisition...')
                     return          
 
                 print(f'Acquiring footage for timepoint {t+1}...')
-
+                
                 # Turn leds on
                 leds.set(LED_VALUE)
                 time.sleep(1)
@@ -162,7 +164,7 @@ class Acquisition:
                 # Acquire footage
                 t1 = time.time()
 
-                timings = picam2.video_capture(path, capture_length, exposure=exposure, fps=fps, sensor_mode=sensor_mode)
+                timings = camera.video_capture(path, capture_length, exposure=exposure, fps=fps, analogue_gain=analogue_gain, sensor_mode=sensor_mode)
                 ((total, capture, ancillary), (complete, incomplete), ft) = timings
                 timepointData = (total, capture, ancillary, incomplete, str(t), 0, ft.mean(), ft.min(), ft.max())
                 time_data.append(timepointData)
@@ -172,7 +174,7 @@ class Acquisition:
 
                 # Turn leds off
                 if not light_auto_dim:
-                    leds.set(0)      
+                    leds.set(0) 
 
                 # Send progress updates
                 if email.isLoggedIn:
@@ -187,6 +189,7 @@ class Acquisition:
                 for i in range(round(sleep_time)):
                     if self.shutdown.is_set():
                         leds.set(LED_VALUE)
+                        self.acquiring = False
                         print('Exiting acquisition...')
                         return          
                     
@@ -235,6 +238,7 @@ class Acquisition:
                 timepointData = []
                 for label,pos in zip(labels, xy_data):
                     if self.shutdown.is_set():
+                        self.acquiring = False
                         print('Exiting acquisition...')
                         return          
 
@@ -246,7 +250,7 @@ class Acquisition:
                     path = paths[label][t]
                     timepointPaths.append(path)
 
-                    timings = picam2.video_capture(path, capture_length, exposure=exposure, fps=fps, sensor_mode=sensor_mode)
+                    timings = camera.video_capture(path, capture_length, exposure=exposure, fps=fps, analogue_gain=analogue_gain, sensor_mode=sensor_mode)
                     ((total, capture, ancillary), (complete, incomplete), ft) = timings
                     timepoint_data = (total, capture, ancillary, incomplete, str(t), label, ft.mean(), ft.min(), ft.max())
                     
@@ -274,6 +278,7 @@ class Acquisition:
                 for i in range(round(sleep_time)):
                     if self.shutdown.is_set():
                         leds.set(LED_VALUE)
+                        self.acquiring = False                        
                         print('Exiting acquisition...')
                         return          
                     
@@ -295,6 +300,7 @@ class Acquisition:
             email.close()
 
         self.stop()
+        self.acquiring = False
 
 
     def stop(self):
@@ -303,6 +309,6 @@ class Acquisition:
         '''
         if self.acquiring:
             self.shutdown.set()
-            self.acquiring = False
+            
 
 
