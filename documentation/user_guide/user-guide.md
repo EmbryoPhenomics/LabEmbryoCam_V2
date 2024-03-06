@@ -142,6 +142,7 @@ You can then use the three tabs - LED, Exposure and Frame-rate, to make adjustme
 The following are descriptions for each of the settings in the Camera View.
 * **LED**: The percentage brightness of the LED ring light. Note that the lighting can also be adjusted by using the lighting mount up and down, and by screwing/unscrewing the darkfield adapter. The LED will by default go to sleep when not needed during an experiment.
 * **Exposure**: The shutter speed at which the camera operates in milliseconds - 20 ms is a good starting point.
+* **Analogue gain**: The analogue gain applied by the camera sensor, to be used too adjust the brightness of the images without affecting frame-rate. 
 * **Frame-rate**: The frame-rate at which videos are captured, in frames per second.
 * **Resolution**: Presets for resolution at which images will be captured - this is dependent on the available sensor modes for the connected camera board.
 
