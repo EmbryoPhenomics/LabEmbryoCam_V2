@@ -225,7 +225,18 @@ Here are descriptions for each acquisition parameter:
 
 Once you have added in your desired acquisition parameters, you can now start an acquisition using the Start acquisition button.
 
-Progress of the experiment will be shown at the bottom of the user interface in the 'Experiment Progress' section. This enables tracking the progress of an experiment.
+**Note**
+If you would like to receive email updates and your LEC is connected to a network via WiFi or ethernet, then you simply need to edit the `app_config.json` folder located in the source code folder (`/home/pi/LabEmbryoCam_V2/software/`), with the following changes:
+
+```
+	"emails": "on", # Change to "off" if you would like to turn off email updates.
+	"email_username": "username@gmail.com", 
+	"email_password": "password", # Must be an app password
+```
+
+The email updates module for the LEC uses gmail so you will need to register an account with gmail and create an app password (see https://support.google.com/mail/answer/185833?hl=en-GB). You will need to specify this app password in the `email_password` argument. 
+
+Finally, progress of the experiment will be shown at the bottom of the user interface in the 'Experiment Progress' section. This enables tracking the progress of an experiment.
 
 
 <img src="assets/expt-progress.png"  width="100%">
