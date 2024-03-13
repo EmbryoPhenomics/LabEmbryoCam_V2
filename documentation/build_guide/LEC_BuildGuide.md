@@ -1124,7 +1124,7 @@ You should see 'Network running. IP address = XXX.XXX.X.XXX', with the XXX corre
 
 You can now access the Duet board of the LabEmbryoCam on your network via this IP address, from any other device connected to the same network. You will be prompted for a password. The default password for LabEmbryoCams is ```radix```
 
-
+To check the input power to the Duet board, use M122 in CuteCom.
 
 
 
