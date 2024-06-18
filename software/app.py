@@ -721,7 +721,8 @@ def save_config(n_clicks, exposure, fps, resolution, analogue_gain, timepoints, 
     output=[
         Output('acquisition_state', 'children'),
         Output('acquisition-live-stream-popup', 'is_open'),
-        Output('acquisition-folder-popup', 'is_open')],
+        Output('acquisition-folder-popup', 'is_open'),
+        Output('acquisition-interval-popup', 'is_open')],
     inputs=[Input('acquire-button', 'n_clicks')],
     state=[
         State('connect-cam-callback', 'children'),
@@ -740,14 +741,25 @@ def save_config(n_clicks, exposure, fps, resolution, analogue_gain, timepoints, 
 )
 def acquire(n_clicks, cam_init, timepoints, length, time, exposure, fps, resolution, analogue_gain, user_path, xy_data, acq_num, light_auto_dim):
     if n_clicks is None:
-        return trigger, False, False
+        return trigger, False, False, False
     else:
         if len(os.listdir(user_path)):
-            return trigger, False, True
+            return trigger, False, True, False
 
         if camera_state.trigger and camera_state.state == 'streaming':
             print('Streaming currently, will fail...')
-            return trigger, True, False
+            return trigger, True, False, False
+
+        camera_scan_time = np.sum([time for i in coord_data.xs])
+        xyz_scan_time = xyz.check_scan_time([(x,y,z,l) for x,y,z,l in zip(coord_data.xs, coord_data.ys, coord_data.zs, coord_data.labels)])
+        total_scan_time = camera_scan_time + xyz_scan_time
+        total_scan_time /= 60
+        
+        print(total_scan_time, length)
+        print(total_scan_time + (total_scan_time*0.05))
+        if total_scan_time + (total_scan_time*0.05) >= length:
+            print('Timepoint interval too short...')
+            return trigger, False, False, True
 
         # Set user-specified acquisition resolution
         camera_settings.set('sensor_mode', resolution)
@@ -791,7 +803,7 @@ def acquire(n_clicks, cam_init, timepoints, length, time, exposure, fps, resolut
             email=email # Emails
         ) 
 
-        return trigger, False, False
+        return trigger, False, False, False
 
 
 @app.callback(

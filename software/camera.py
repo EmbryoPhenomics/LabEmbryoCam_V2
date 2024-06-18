@@ -121,8 +121,7 @@ class Camera:
 
         Notes
         -----
-        Regardless of platform, opencv is used to display images live and as such,
-        an esc key press is required to exit the live stream.
+        Regardless of platform, opencv is used to display images live.
 
         '''
         if separate_thread:

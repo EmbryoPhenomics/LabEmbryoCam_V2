@@ -9,6 +9,7 @@ import time
 import re
 import numpy as np
 import ujson
+from more_itertools import pairwise
 
 def which(iterable, obj):
     are = []
@@ -29,12 +30,18 @@ def gen_xy_old(xy1, xWells, yWells):
 
     positions = []
     for i in range(yWells):
+        row_positions = []
         for j in range(xWells):
             x = round((j*well_dist) + xy1[0], 2)
             y = round((i*well_dist) + xy1[1], 2)
             z = xy1[2]
             labels = yLabs[i]+str(j+1)
-            positions.append((x,y,z,labels))
+            row_positions.append((x,y,z,labels))
+
+        if i % 2 != 0:
+            row_positions = row_positions[::-1]
+
+        positions.extend(row_positions)
 
     return positions
 
@@ -52,6 +59,23 @@ def gen_xy(xy1, position_list):
         new_positions.append((X, Y, Z, label))
 
     return new_positions
+
+
+def check_scan_time(positions):
+    fspeed = 2.5
+
+    scan_time = 0
+
+    for prev, next_ in pairwise(positions):
+        x1,y1,z1,l = prev
+        x2,y2,z2,l = next_
+
+        dist = np.sqrt((x2-x1)**2 + (y2-y1)**2 + (z2-z1)**2)
+        wait = dist / fspeed
+        scan_time += wait+1
+
+    return scan_time
+
 
 class Coordinates:
     def __init__(self):
@@ -392,16 +416,26 @@ class StageHardware:
             self.joystick.close()
 
 if __name__ == '__main__':
+    import matplotlib.pyplot as plt
 
-    stage = StageHardware(Serial('/dev/ttyACM1', 115200), None)
-    stage.setOrigin()
+    positions = gen_xy_old((10,10,0), 12, 8)
+    print(check_scan_time(positions))
+
+    for i, (x,y,z,l) in enumerate(positions):
+        plt.plot(x, y, 'o')
+        plt.text(x,y,s=f'{l}_{i}')
+
+    plt.show()
+
+    # stage = StageHardware(Serial('/dev/ttyACM1', 115200), None)
+    # stage.setOrigin()
     
-    sleep(2)
+    # sleep(2)
     
-    for i in range(100):
-        for x in range(1, 150, 10):
-            for y in range(1, 80, 10):
-                stage.moveXY(210-x,0+y,0)
+    # for i in range(100):
+    #     for x in range(1, 150, 10):
+    #         for y in range(1, 80, 10):
+    #             stage.moveXY(210-x,0+y,0)
  
         
     # stage.moveXY_from_relative_coords(-30, 30, 0)

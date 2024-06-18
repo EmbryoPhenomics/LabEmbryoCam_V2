@@ -392,7 +392,7 @@ if __name__ == '__main__':
     picam2 = Camera()
     
     for i in range(1000):
-        picam2.still_capture(exposure=20000, fps=30, analogue_gain=1, sensor_mode=0)
+        picam2.video_capture(path='./test.mkv', duration=10, exposure=20000, fps=30, analogue_gain=1, sensor_mode=0)
 
     picam2.close()
        

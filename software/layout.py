@@ -357,11 +357,6 @@ def app_layout(sensor_modes):
                                     [
                                         dbc.ModalHeader(dbc.ModalTitle("Acquisition Error")),
                                         dbc.ModalBody("Please cancel the live stream before starting an acquisition."),
-                                        # dbc.ModalFooter(
-                                        #     dbc.Button(
-                                        #         "Close", id="close-stream-popup", className="ms-auto", n_clicks=0
-                                        #     )
-                                        # ),
                                     ],
                                     id="acquisition-live-stream-popup",
                                     is_open=False,
@@ -370,13 +365,16 @@ def app_layout(sensor_modes):
                                     [
                                         dbc.ModalHeader(dbc.ModalTitle("Acquisition Error")),
                                         dbc.ModalBody("Files already in folder, please change folder to not overwrite existing data."),
-                                        # dbc.ModalFooter(
-                                        #     dbc.Button(
-                                        #         "Close", id="close-folder-popup", className="ms-auto", n_clicks=0
-                                        #     )
-                                        # ),
                                     ],
                                     id="acquisition-folder-popup",
+                                    is_open=False,
+                                ),
+                                dbc.Modal(
+                                    [
+                                        dbc.ModalHeader(dbc.ModalTitle("Acquisition Error")),
+                                        dbc.ModalBody("Time to scan per timepoint is greater than the interval requested. Please set a greater timepoint interval."),
+                                    ],
+                                    id="acquisition-interval-popup",
                                     is_open=False,
                                 ),
                             ])
